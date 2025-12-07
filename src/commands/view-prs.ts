@@ -17,11 +17,18 @@ export class ViewPRsCommand {
         }
 
         const cache = this.app.metadataCache.getFileCache(activeFile);
-        const repoUrl = cache?.frontmatter?.repo_url;
+        let repoUrl = cache?.frontmatter?.repo_url;
 
         if (!repoUrl) {
-            new Notice('Not a Project Snapshot (missing repo_url).');
-            return;
+            // Fallback: Try to parse content
+            const content = await this.app.vault.read(activeFile);
+            const match = content.match(/\*\*Repository:\*\* \[.*\]\((.*)\)/);
+            if (match && match[1]) {
+                repoUrl = match[1];
+            } else {
+                new Notice('Not a Project Snapshot (missing repo_url).');
+                return;
+            }
         }
 
         const parsed = this.githubAPI.parseGitHubUrl(repoUrl);

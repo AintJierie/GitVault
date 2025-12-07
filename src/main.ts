@@ -1,4 +1,4 @@
-import { Plugin, TFile, Notice } from 'obsidian';
+import { Plugin, TFile, Notice, SuggestModal, App } from 'obsidian';
 import { ProjectSnapshotSettings, DEFAULT_SETTINGS, ProjectSnapshotSettingTab } from './settings';
 import { GitHubAPI } from './github/api';
 import { CreateSnapshotCommand } from './commands/create-snapshot';
@@ -22,10 +22,9 @@ export default class ProjectSnapshotPlugin extends Plugin {
         // Initialize GitHub API
         this.githubAPI = new GitHubAPI(this.settings.githubToken);
 
-        // Add ribbon icon
-        this.addRibbonIcon('github', 'Create Project Snapshot', async () => {
-            const command = new CreateSnapshotCommand(this.app, this.settings, this.githubAPI);
-            await command.execute();
+        // Add ribbon icon (Menu)
+        this.addRibbonIcon('github', 'Project Snapshot Menu', (evt: MouseEvent) => {
+            new ProjectSnapshotMenuModal(this.app, this).open();
         });
 
         // Add commands
@@ -107,7 +106,6 @@ export default class ProjectSnapshotPlugin extends Plugin {
                     link.addEventListener('mouseenter', async (e) => {
                         const parsed = this.githubAPI.parseGitHubUrl(link.href);
                         if (parsed) {
-                            // Use aria-label for Obsidian-style tooltip
                             if (!link.getAttribute('aria-label')) {
                                 link.setAttribute('aria-label', 'Loading stats...');
                                 const data = await this.githubAPI.fetchRepoData(parsed.owner, parsed.repo);
@@ -136,6 +134,65 @@ export default class ProjectSnapshotPlugin extends Plugin {
         await this.saveData(this.settings);
         if (this.githubAPI) {
             this.githubAPI.setToken(this.settings.githubToken);
+        }
+    }
+}
+
+interface CommandItem {
+    label: string;
+    id: string;
+}
+
+class ProjectSnapshotMenuModal extends SuggestModal<CommandItem> {
+    plugin: ProjectSnapshotPlugin;
+
+    constructor(app: App, plugin: ProjectSnapshotPlugin) {
+        super(app);
+        this.plugin = plugin;
+        this.setPlaceholder('Select a command...');
+    }
+
+    getSuggestions(query: string): CommandItem[] {
+        const commands: CommandItem[] = [
+            { label: 'Create Project Snapshot from GitHub URL', id: 'create-snapshot' },
+            { label: 'Open Issue Tracker', id: 'issue-tracker' },
+            { label: 'View Pull Requests', id: 'view-prs' },
+            { label: 'Refresh Project Data', id: 'refresh-data' },
+            { label: 'Create Project Dashboard', id: 'create-dashboard' },
+            { label: 'Compare Two Repositories', id: 'compare-repos' },
+            { label: 'Bulk Import User Repositories', id: 'bulk-import' }
+        ];
+
+        return commands.filter(cmd => cmd.label.toLowerCase().includes(query.toLowerCase()));
+    }
+
+    renderSuggestion(cmd: CommandItem, el: HTMLElement) {
+        el.createEl('div', { text: cmd.label });
+    }
+
+    async onChooseSuggestion(cmd: CommandItem, evt: MouseEvent | KeyboardEvent) {
+        switch (cmd.id) {
+            case 'create-snapshot':
+                new CreateSnapshotCommand(this.app, this.plugin.settings, this.plugin.githubAPI).execute();
+                break;
+            case 'issue-tracker':
+                new IssueTrackerCommand(this.app, this.plugin.settings, this.plugin.githubAPI).execute();
+                break;
+            case 'view-prs':
+                new ViewPRsCommand(this.app, this.plugin.settings, this.plugin.githubAPI).execute();
+                break;
+            case 'refresh-data':
+                new RefreshDataCommand(this.app, this.plugin.settings, this.plugin.githubAPI).execute();
+                break;
+            case 'create-dashboard':
+                new CreateDashboardCommand(this.app, this.plugin.settings, this.plugin.githubAPI).execute();
+                break;
+            case 'compare-repos':
+                new CompareReposCommand(this.app, this.plugin.settings, this.plugin.githubAPI).execute();
+                break;
+            case 'bulk-import':
+                new BulkImportCommand(this.app, this.plugin.settings, this.plugin.githubAPI).execute();
+                break;
         }
     }
 }

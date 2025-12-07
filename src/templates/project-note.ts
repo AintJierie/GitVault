@@ -6,6 +6,15 @@ export class ProjectNoteTemplate {
     static generate(data: RepoData, settings: ProjectSnapshotSettings): string {
         const sections: string[] = [];
 
+        // Frontmatter
+        sections.push('---');
+        sections.push(`repo_url: ${data.url}`);
+        sections.push(`updated: ${new Date().toISOString()}`);
+        sections.push('tags:');
+        sections.push('  - project-snapshot');
+        sections.push('---');
+        sections.push('');
+
         // Header
         sections.push(`# ${data.repo}`);
         sections.push('');
