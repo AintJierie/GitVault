@@ -3,7 +3,7 @@
 	"name": "GitVault",
 	"version": "0.0.1",
 	"minAppVersion": "0.15.0",
-	"description": "Check your GitHub status and project activity without leaving Obsidian.",
+	"description": "Turn your Obsidian vault into a native GitHub project manager. Track issues, review PRs, and visualize repo stats without switching apps.",
 	"author": "Jierie Ezequiel Jacla",
 	"authorUrl": "https://github.com/AintJierie",
 	"fundingUrl": "https://buymeacoffee.com/AintJierie",
