@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-gitvault",
 	"version": "0.0.1",
-	"description": "Track GitHub projects directly in Obsidian",
+	"description": "Track GitHub projects directly in your vault",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/AintJierie/GitVault.git"
