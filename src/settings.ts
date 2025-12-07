@@ -42,7 +42,7 @@ export class ProjectSnapshotSettingTab extends PluginSettingTab {
         const { containerEl } = this;
         containerEl.empty();
 
-        containerEl.createEl('h2', { text: 'Project Snapshot Settings' });
+        containerEl.createEl('h2', { text: 'GitVault Settings' });
 
         // GitHub Token
         new Setting(containerEl)

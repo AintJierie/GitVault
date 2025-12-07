@@ -16,7 +16,7 @@ export default class ProjectSnapshotPlugin extends Plugin {
     githubAPI: GitHubAPI;
 
     async onload() {
-        console.log('Loading Project Snapshot plugin');
+        console.log('Loading GitVault plugin');
 
         // Load settings
         await this.loadSettings();
@@ -25,14 +25,14 @@ export default class ProjectSnapshotPlugin extends Plugin {
         this.githubAPI = new GitHubAPI(this.settings.githubToken);
 
         // Add ribbon icon (Menu)
-        this.addRibbonIcon('github', 'Project Snapshot Menu', (evt: MouseEvent) => {
+        this.addRibbonIcon('github', 'GitVault Menu', (evt: MouseEvent) => {
             new ProjectSnapshotMenuModal(this.app, this).open();
         });
 
         // Add commands
         this.addCommand({
             id: 'create-project-snapshot',
-            name: 'Project Snapshot: Create from URL',
+            name: 'GitVault: Create from URL',
             callback: async () => {
                 const command = new CreateSnapshotCommand(this.app, this.settings, this.githubAPI);
                 await command.execute();
@@ -41,7 +41,7 @@ export default class ProjectSnapshotPlugin extends Plugin {
 
         this.addCommand({
             id: 'refresh-project-data',
-            name: 'Project Snapshot: Refresh Data',
+            name: 'GitVault: Refresh Data',
             callback: async () => {
                 const command = new RefreshDataCommand(this.app, this.settings, this.githubAPI);
                 await command.execute();
@@ -50,7 +50,7 @@ export default class ProjectSnapshotPlugin extends Plugin {
 
         this.addCommand({
             id: 'create-project-dashboard',
-            name: 'Project Snapshot: Create Dashboard',
+            name: 'GitVault: Create Dashboard',
             callback: async () => {
                 const command = new CreateDashboardCommand(this.app, this.settings, this.githubAPI);
                 await command.execute();
@@ -59,7 +59,7 @@ export default class ProjectSnapshotPlugin extends Plugin {
 
         this.addCommand({
             id: 'bulk-import-repos',
-            name: 'Project Snapshot: Bulk Import Repositories',
+            name: 'GitVault: Bulk Import Repositories',
             callback: async () => {
                 const command = new BulkImportCommand(this.app, this.settings, this.githubAPI);
                 await command.execute();
@@ -68,7 +68,7 @@ export default class ProjectSnapshotPlugin extends Plugin {
 
         this.addCommand({
             id: 'compare-repos',
-            name: 'Project Snapshot: Compare Repositories',
+            name: 'GitVault: Compare Repositories',
             callback: async () => {
                 const command = new CompareReposCommand(this.app, this.settings, this.githubAPI);
                 await command.execute();
@@ -77,7 +77,7 @@ export default class ProjectSnapshotPlugin extends Plugin {
 
         this.addCommand({
             id: 'issue-tracker',
-            name: 'Project Snapshot: Open Issue Tracker',
+            name: 'GitVault: Open Issue Tracker',
             callback: async () => {
                 const command = new IssueTrackerCommand(this.app, this.settings, this.githubAPI);
                 await command.execute();
@@ -86,7 +86,7 @@ export default class ProjectSnapshotPlugin extends Plugin {
 
         this.addCommand({
             id: 'view-prs',
-            name: 'Project Snapshot: View Pull Requests',
+            name: 'GitVault: View Pull Requests',
             callback: async () => {
                 const command = new ViewPRsCommand(this.app, this.settings, this.githubAPI);
                 await command.execute();
@@ -95,7 +95,7 @@ export default class ProjectSnapshotPlugin extends Plugin {
 
         this.addCommand({
             id: 'switch-branch',
-            name: 'Project Snapshot: Switch Branch',
+            name: 'GitVault: Switch Branch',
             callback: async () => {
                 const command = new SwitchBranchCommand(this.app, this.settings, this.githubAPI);
                 await command.execute();
@@ -104,7 +104,7 @@ export default class ProjectSnapshotPlugin extends Plugin {
 
         this.addCommand({
             id: 'view-commits',
-            name: 'Project Snapshot: View Commits',
+            name: 'GitVault: View Commits',
             callback: async () => {
                 const command = new ViewCommitsCommand(this.app, this.settings, this.githubAPI);
                 await command.execute();
@@ -116,11 +116,11 @@ export default class ProjectSnapshotPlugin extends Plugin {
 
         // Status bar
         const statusBarItem = this.addStatusBarItem();
-        statusBarItem.setText('📦 Project Snapshot');
+        statusBarItem.setText('📦 GitVault');
 
         // Subscribe to rate limit updates
         this.githubAPI.onRateLimitChange = (remaining) => {
-            statusBarItem.setText(`📦 Project Snapshot | API: ${remaining}`);
+            statusBarItem.setText(`📦 GitVault | API: ${remaining}`);
         };
 
         // Hover Stats
@@ -167,7 +167,7 @@ export default class ProjectSnapshotPlugin extends Plugin {
     }
 
     async onunload() {
-        console.log('Unloading Project Snapshot plugin');
+        console.log('Unloading GitVault plugin');
     }
 
     async loadSettings() {
@@ -205,7 +205,7 @@ class ProjectSnapshotMenuModal extends SuggestModal<CommandItem> {
 
     getSuggestions(query: string): CommandItem[] {
         const commands: CommandItem[] = [
-            { label: 'Create Project Snapshot', id: 'create-snapshot', icon: '📸', description: 'Create a note from a GitHub URL' },
+            { label: 'Create GitVault', id: 'create-snapshot', icon: '📸', description: 'Create a note from a GitHub URL' },
             { label: 'Bulk Import Repositories', id: 'bulk-import', icon: '📦', description: 'Import all your GitHub repos at once' },
             { label: 'Create Project Dashboard', id: 'create-dashboard', icon: '📊', description: 'Generate an overview of all projects' },
             { label: 'Compare Repositories', id: 'compare-repos', icon: '⚔️', description: 'Side-by-side repository comparison' },

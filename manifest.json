@@ -1,6 +1,6 @@
 {
-	"id": "project-snapshot",
-	"name": "Project Snapshot",
+	"id": "gitvault",
+	"name": "GitVault",
 	"version": "0.0.1",
 	"minAppVersion": "0.15.0",
 	"description": "Check your GitHub status and project activity without leaving Obsidian.",

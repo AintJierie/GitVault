@@ -1,6 +1,6 @@
-# 📦 Project Snapshot for Obsidian (v0.0.1)
+# 📦 GitVault for Obsidian (v0.0.1)
 
-**Project Snapshot** is a powerful Obsidian plugin that integrates your GitHub projects directly into your vault. Keep track of repositories, branches, issues, and pull requests without ever leaving Obsidian.
+**GitVault** is a powerful Obsidian plugin that integrates your GitHub projects directly into your vault. Keep track of repositories, branches, issues, and pull requests without ever leaving Obsidian.
 
 ## 🚀 Features
 
@@ -27,7 +27,7 @@
 ## ⚙️ Setup
 
 1.  **Configure GitHub Token**:
-    - Go to **Settings > Project Snapshot**.
+    - Go to **Settings > GitVault**.
     - Enter your **GitHub Personal Access Token** (Classic or Fine-grained).
     - *Note: A token is required to avoid strict API rate limits and to access private repos.*
 
@@ -38,12 +38,12 @@
 ### Commands
 Access these via the Command Palette (`Ctrl/Cmd + P`) or the Ribbon Menu:
 
-- **`Project Snapshot: Create from URL`**: Paste a GitHub URL to generate a note.
-- **`Project Snapshot: Create Dashboard`**: generate a comprehensive dashboard note.
-- **`Project Snapshot: Switch Branch`**: Change the tracked branch for the active note.
-- **`Project Snapshot: View Commits`**: View commit history for the current branch.
-- **`Project Snapshot: View Pull Requests`**: Browse PRs and review code.
-- **`Project Snapshot: Compare Repositories`**: Compare two repos side-by-side.
+- **`GitVault: Create from URL`**: Paste a GitHub URL to generate a note.
+- **`GitVault: Create Dashboard`**: generate a comprehensive dashboard note.
+- **`GitVault: Switch Branch`**: Change the tracked branch for the active note.
+- **`GitVault: View Commits`**: View commit history for the current branch.
+- **`GitVault: View Pull Requests`**: Browse PRs and review code.
+- **`GitVault: Compare Repositories`**: Compare two repos side-by-side.
 
 ### Auto-Refresh
 Enable **Auto-Refresh** in settings to keep your project stats updated in the background. You can set the interval (in minutes) to suit your workflow.

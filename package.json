@@ -1,5 +1,5 @@
 {
-	"name": "obsidian-project-snapshot",
+	"name": "obsidian-gitvault",
 	"version": "0.0.1",
 	"description": "Track GitHub projects directly in Obsidian",
 	"main": "main.js",
