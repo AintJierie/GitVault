@@ -20,6 +20,7 @@ export interface RepoData {
     url: string;
     homepage: string;
     topics: string[];
+    readme?: string;
 }
 
 export class GitHubAPI {
@@ -221,6 +222,22 @@ export class GitHubAPI {
 
             const latestCommit = commitsResponse.data[0];
 
+            // Fetch README (optional, but we fetch it always and template decides to show it or not)
+            // Or we check settings? The API class doesn't see settings usually, but we can return it.
+            let readmeContent = '';
+            try {
+                const readmeResponse = await this.octokit.rest.repos.getReadme({
+                    owner,
+                    repo,
+                    mediaType: {
+                        format: 'raw'
+                    }
+                });
+                readmeContent = readmeResponse.data as unknown as string;
+            } catch (ignored) {
+                // No README or 404
+            }
+
             return {
                 owner,
                 repo,
@@ -239,7 +256,8 @@ export class GitHubAPI {
                 openIssues: repoResponse.data.open_issues_count,
                 url: repoResponse.data.html_url,
                 homepage: repoResponse.data.homepage || '',
-                topics: repoResponse.data.topics || []
+                topics: repoResponse.data.topics || [],
+                readme: readmeContent
             };
         } catch (error: any) {
             console.error('Error fetching repo data:', error);

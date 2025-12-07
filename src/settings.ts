@@ -12,6 +12,7 @@ export interface ProjectSnapshotSettings {
         includeLastCommit: boolean;
         includeIssues: boolean;
         includeStars: boolean;
+        includeReadme: boolean;
     };
 }
 
@@ -25,6 +26,7 @@ export const DEFAULT_SETTINGS: ProjectSnapshotSettings = {
         includeLastCommit: true,
         includeIssues: true,
         includeStars: true,
+        includeReadme: true,
     }
 };
 
@@ -115,6 +117,16 @@ export class ProjectSnapshotSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.templateCustomization.includeStars)
                 .onChange(async (value) => {
                     this.plugin.settings.templateCustomization.includeStars = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('Include README')
+            .setDesc('Append the repository README at the end of the note')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.templateCustomization.includeReadme)
+                .onChange(async (value) => {
+                    this.plugin.settings.templateCustomization.includeReadme = value;
                     await this.plugin.saveSettings();
                 }));
 

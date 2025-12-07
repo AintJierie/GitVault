@@ -107,6 +107,14 @@ export class ProjectNoteTemplate {
         }
         sections.push('');
 
+        // README
+        if (settings.templateCustomization.includeReadme && data.readme) {
+            sections.push(`## 📖 README`);
+            sections.push('');
+            sections.push(data.readme);
+            sections.push('');
+        }
+
         // Footer
         sections.push(`---`);
         sections.push(`<div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.85em;">`);
