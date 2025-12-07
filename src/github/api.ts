@@ -265,6 +265,21 @@ export class GitHubAPI {
         }
     }
 
+    async getCommits(owner: string, repo: string, sha?: string): Promise<any[]> {
+        try {
+            const response = await this.octokit.rest.repos.listCommits({
+                owner,
+                repo,
+                sha,
+                per_page: 50
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching commits:', error);
+            return [];
+        }
+    }
+
     async fetchRepoData(owner: string, repo: string, ref?: string): Promise<RepoData | null> {
         try {
             // Fetch repository info

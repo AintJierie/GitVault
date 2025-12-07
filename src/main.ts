@@ -9,6 +9,7 @@ import { CompareReposCommand } from './commands/compare-repos';
 import { IssueTrackerCommand } from './commands/issue-tracker';
 import { ViewPRsCommand } from './commands/view-prs';
 import { SwitchBranchCommand } from './commands/switch-branch';
+import { ViewCommitsCommand } from './commands/view-commits';
 
 export default class ProjectSnapshotPlugin extends Plugin {
     settings: ProjectSnapshotSettings;
@@ -97,6 +98,15 @@ export default class ProjectSnapshotPlugin extends Plugin {
             name: 'Project Snapshot: Switch Branch',
             callback: async () => {
                 const command = new SwitchBranchCommand(this.app, this.settings, this.githubAPI);
+                await command.execute();
+            }
+        });
+
+        this.addCommand({
+            id: 'view-commits',
+            name: 'Project Snapshot: View Commits',
+            callback: async () => {
+                const command = new ViewCommitsCommand(this.app, this.settings, this.githubAPI);
                 await command.execute();
             }
         });
@@ -201,6 +211,7 @@ class ProjectSnapshotMenuModal extends SuggestModal<CommandItem> {
             { label: 'Compare Repositories', id: 'compare-repos', icon: '⚔️', description: 'Side-by-side repository comparison' },
             { label: 'Open Issue Tracker', id: 'issue-tracker', icon: '🐛', description: 'View and manage GitHub issues' },
             { label: 'View Pull Requests', id: 'view-prs', icon: '🔀', description: 'Browse open pull requests' },
+            { label: 'View Commits', id: 'view-commits', icon: '📜', description: 'View commit history' },
             { label: 'Switch Branch', id: 'switch-branch', icon: '🌿', description: 'Switch branch and refresh data' },
             { label: 'Refresh Project Data', id: 'refresh-data', icon: '🔄', description: 'Update current project note' }
         ];
@@ -247,6 +258,9 @@ class ProjectSnapshotMenuModal extends SuggestModal<CommandItem> {
                 break;
             case 'switch-branch':
                 new SwitchBranchCommand(this.app, this.plugin.settings, this.plugin.githubAPI).execute();
+                break;
+            case 'view-commits':
+                new ViewCommitsCommand(this.app, this.plugin.settings, this.plugin.githubAPI).execute();
                 break;
         }
     }

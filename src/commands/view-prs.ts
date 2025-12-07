@@ -55,9 +55,10 @@ export class PRListModal extends Modal {
     }
 
     onOpen() {
-        const { contentEl } = this;
+        const { contentEl, modalEl } = this;
+        modalEl.style.cssText = 'width: 90vw; max-width: 1000px;';
         contentEl.empty();
-        contentEl.style.cssText = 'padding: 0; width: 600px; max-width: 90vw;';
+        contentEl.style.padding = '0';
 
         // Header
         const header = contentEl.createDiv();
@@ -188,9 +189,10 @@ export class PRCommitsModal extends Modal {
     }
 
     onOpen() {
-        const { contentEl } = this;
+        const { contentEl, modalEl } = this;
+        modalEl.style.cssText = 'width: 90vw; max-width: 1000px;';
         contentEl.empty();
-        contentEl.style.cssText = 'padding: 0; width: 700px; max-width: 90vw;';
+        contentEl.style.padding = '0';
 
         // Header
         const header = contentEl.createDiv();
@@ -281,9 +283,10 @@ export class CommitFilesModal extends Modal {
     }
 
     onOpen() {
-        const { contentEl } = this;
+        const { contentEl, modalEl } = this;
+        modalEl.style.cssText = 'width: 90vw; max-width: 1100px; height: 85vh;';
         contentEl.empty();
-        contentEl.style.cssText = 'padding: 0; width: 800px; max-width: 90vw; max-height: 85vh;';
+        contentEl.style.padding = '0';
 
         // Header
         const header = contentEl.createDiv();
@@ -389,9 +392,10 @@ export class ViewDiffModal extends Modal {
     }
 
     onOpen() {
-        const { contentEl } = this;
+        const { contentEl, modalEl } = this;
+        modalEl.style.cssText = 'width: 95vw; max-width: 1600px; height: 90vh;';
         contentEl.empty();
-        contentEl.style.cssText = 'padding: 0; width: 95vw; height: 85vh; max-width: 1400px;';
+        contentEl.style.padding = '0';
 
         // Header
         const header = contentEl.createDiv();

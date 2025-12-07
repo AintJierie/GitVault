@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-project-snapshot",
-	"version": "1.0.0",
+	"version": "0.0.1",
 	"description": "Track GitHub projects directly in Obsidian",
 	"main": "main.js",
 	"scripts": {
