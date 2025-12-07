@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import ProjectSnapshotPlugin from './main';
+import type ProjectSnapshotPlugin from './main';
 
 export interface ProjectSnapshotSettings {
     githubToken: string;

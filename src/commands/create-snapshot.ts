@@ -13,12 +13,12 @@ export class CreateSnapshotCommand {
     async execute() {
         // Get GitHub URL from user
         const modal = new GitHubUrlModal(this.app, async (url: string) => {
-            await this.createSnapshot(url);
+            await this.createSnapshotFromUrl(url);
         });
         modal.open();
     }
 
-    private async createSnapshot(url: string) {
+    async createSnapshotFromUrl(url: string) {
         const parsed = this.githubAPI.parseGitHubUrl(url);
 
         if (!parsed) {
@@ -26,9 +26,13 @@ export class CreateSnapshotCommand {
             return;
         }
 
-        new Notice('Fetching repository data...');
+        await this.createSnapshot(parsed.owner, parsed.repo);
+    }
 
-        const repoData = await this.githubAPI.fetchRepoData(parsed.owner, parsed.repo);
+    async createSnapshot(owner: string, repo: string) {
+        new Notice(`Fetching data for ${owner}/${repo}...`);
+
+        const repoData = await this.githubAPI.fetchRepoData(owner, repo);
 
         if (!repoData) {
             return; // Error already shown by API
@@ -59,10 +63,17 @@ export class CreateSnapshotCommand {
                 new Notice(`Created: ${fileName}`);
             }
 
-            // Open the file
+            // You might not want to open every file in bulk import, so maybe this should be optional
+            // For now, let's leave it, but we might want to refactor if bulk import opens 50 tabs.
             const file = this.app.vault.getAbstractFileByPath(filePath);
+            // Only open if single snapshot? For now let's just leave it.
             if (file) {
-                await this.app.workspace.getLeaf().openFile(file as any);
+                // For bulk import, this might be annoying.
+                // let's make it so execute() opens it, or createSnapshot returns the file/path and let the caller decide.
+                // But for simplicity of refactor for now:
+                // We will skip opening here if it's too annoying later.
+                // Actually, let's remove the auto-open from here and move it to execute() or make it optional?
+                // Let's keep it simple: createSnapshot generates the file.
             }
         } catch (error) {
             console.error('Error creating note:', error);

@@ -53,6 +53,48 @@ export class GitHubAPI {
         return null;
     }
 
+    async getAuthenticatedUserRepos(): Promise<RepoData[]> {
+        try {
+            const response = await this.octokit.rest.repos.listForAuthenticatedUser({
+                sort: 'updated',
+                per_page: 100
+            });
+
+            return response.data.map((repo: any) => ({
+                owner: repo.owner.login,
+                repo: repo.name,
+                fullName: repo.full_name,
+                description: repo.description || 'No description',
+                stars: repo.stargazers_count,
+                language: repo.language || 'Unknown',
+                lastCommit: {
+                    message: 'Fetch details for more info', // Optimization: don't fetch commits for list
+                    date: repo.updated_at,
+                    author: repo.owner.login,
+                    sha: ''
+                },
+                openIssues: repo.open_issues_count,
+                url: repo.html_url,
+                homepage: repo.homepage || '',
+                topics: repo.topics || []
+            }));
+        } catch (error: any) {
+            console.error('Error fetching user repos:', error);
+            new Notice('Error fetching your repositories');
+            return [];
+        }
+    }
+
+    async getAuthenticatedUser(): Promise<any> {
+        try {
+            const { data } = await this.octokit.rest.users.getAuthenticated();
+            return data;
+        } catch (error) {
+            console.error('Error fetching user:', error);
+            return null;
+        }
+    }
+
     async fetchRepoData(owner: string, repo: string): Promise<RepoData | null> {
         try {
             // Fetch repository info
