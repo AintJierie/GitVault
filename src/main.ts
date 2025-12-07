@@ -159,8 +159,7 @@ class ProjectSnapshotMenuModal extends SuggestModal<CommandItem> {
             { label: 'View Pull Requests', id: 'view-prs' },
             { label: 'Refresh Project Data', id: 'refresh-data' },
             { label: 'Create Project Dashboard', id: 'create-dashboard' },
-            { label: 'Compare Two Repositories', id: 'compare-repos' },
-            { label: 'Bulk Import User Repositories', id: 'bulk-import' }
+            { label: 'Compare Two Repositories', id: 'compare-repos' }
         ];
 
         return commands.filter(cmd => cmd.label.toLowerCase().includes(query.toLowerCase()));

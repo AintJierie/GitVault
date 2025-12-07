@@ -7,6 +7,8 @@ export interface RepoData {
     fullName: string;
     description: string;
     stars: number;
+    forks: number;
+    createdAt: string;
     language: string;
     lastCommit: {
         message: string;
@@ -66,6 +68,8 @@ export class GitHubAPI {
                 fullName: repo.full_name,
                 description: repo.description || 'No description',
                 stars: repo.stargazers_count,
+                forks: repo.forks_count,
+                createdAt: repo.created_at,
                 language: repo.language || 'Unknown',
                 lastCommit: {
                     message: 'Fetch details for more info',
@@ -195,6 +199,8 @@ export class GitHubAPI {
                 fullName: repoResponse.data.full_name,
                 description: repoResponse.data.description || 'No description',
                 stars: repoResponse.data.stargazers_count,
+                forks: repoResponse.data.forks_count,
+                createdAt: repoResponse.data.created_at,
                 language: repoResponse.data.language || 'Unknown',
                 lastCommit: {
                     message: latestCommit.commit.message.split('\n')[0],

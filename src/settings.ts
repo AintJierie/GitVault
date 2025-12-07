@@ -1,5 +1,6 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import type ProjectSnapshotPlugin from './main';
+import { BulkImportCommand } from './commands/bulk-import';
 
 export interface ProjectSnapshotSettings {
     githubToken: string;
@@ -115,6 +116,18 @@ export class ProjectSnapshotSettingTab extends PluginSettingTab {
                 .onChange(async (value) => {
                     this.plugin.settings.templateCustomization.includeStars = value;
                     await this.plugin.saveSettings();
+                }));
+
+        // Bulk Operations
+        containerEl.createEl('h3', { text: 'Bulk Operations' });
+
+        new Setting(containerEl)
+            .setName('Import User Repositories')
+            .setDesc('Import all repositories from a GitHub user.')
+            .addButton(button => button
+                .setButtonText('Import Now')
+                .onClick(async () => {
+                    new BulkImportCommand(this.app, this.plugin.settings, this.plugin.githubAPI).execute();
                 }));
     }
 }
