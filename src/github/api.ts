@@ -95,6 +95,18 @@ export class GitHubAPI {
         }
     }
 
+    async getContributionData(username: string): Promise<any> {
+        try {
+            // Using a public API to get contribution data without needing GraphQL/Token scopes
+            const response = await fetch(`https://github-contributions-api.jogruber.de/v4/${username}?y=last`);
+            if (!response.ok) return null;
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching contributions:', error);
+            return null;
+        }
+    }
+
     async fetchRepoData(owner: string, repo: string): Promise<RepoData | null> {
         try {
             // Fetch repository info

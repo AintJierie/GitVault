@@ -85,10 +85,10 @@ updated: ${new Date().toISOString()}
 </div>
 
 ## 🔥 Activity Heatmap
-![Contribution Graph](https://grass-graph.moshimo.works/images/${user.login}.png)
+![Contribution Graph](https://github-readme-activity-graph.vercel.app/graph?username=${user.login}&theme=react-dark)
 
 ## 📊 GitHub Stats
-![GitHub Stats](https://github-readme-stats.vercel.app/api?username=${user.login}&show_icons=true&hide_border=true&count_private=true)
+![GitHub Stats](https://github-readme-stats.vercel.app/api?username=${user.login}&show_icons=true&theme=radical)
 
 ## 📈 Overview
 | Total Repos | Total Stars | Open Issues |
