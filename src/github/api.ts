@@ -205,6 +205,52 @@ export class GitHubAPI {
         }
     }
 
+    async getPullRequestCommits(owner: string, repo: string, pull_number: number): Promise<any[]> {
+        try {
+            const response = await this.octokit.rest.pulls.listCommits({
+                owner,
+                repo,
+                pull_number,
+                per_page: 100
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching PR commits:', error);
+            return [];
+        }
+    }
+
+    async getCommitDetails(owner: string, repo: string, ref: string): Promise<any | null> {
+        try {
+            const response = await this.octokit.rest.repos.getCommit({
+                owner,
+                repo,
+                ref
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching commit details:', error);
+            return null;
+        }
+    }
+
+    async getCommitDiff(owner: string, repo: string, ref: string): Promise<string | null> {
+        try {
+            const response = await this.octokit.rest.repos.getCommit({
+                owner,
+                repo,
+                ref,
+                mediaType: {
+                    format: 'diff'
+                }
+            });
+            return response.data as unknown as string;
+        } catch (error) {
+            console.error('Error fetching commit diff:', error);
+            return null;
+        }
+    }
+
     async fetchRepoData(owner: string, repo: string): Promise<RepoData | null> {
         try {
             // Fetch repository info
