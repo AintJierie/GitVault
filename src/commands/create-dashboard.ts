@@ -1,19 +1,12 @@
 import { App, Notice, TFile } from 'obsidian';
 import { ProjectSnapshotSettings } from '../settings';
-// We'll need access to githubAPI which is on the main plugin class instance usually,
-// or passed in. The current signature only has app/settings.
-// But in main.ts, we see: new CreateDashboardCommand(this.app, this.settings)
-// We need to change main.ts to pass githubAPI.
-// For now, let's assume we will change main.ts or pass it.
-// Actually, looking at main.ts it wasn't passed. I'll need to update main.ts first or congruently.
-// I'll update this file to accept it.
 import { GitHubAPI } from '../github/api';
 
 export class CreateDashboardCommand {
     constructor(
         private app: App,
         private settings: ProjectSnapshotSettings,
-        private githubAPI?: GitHubAPI // Optional for smooth refactor, but we need it.
+        private githubAPI?: GitHubAPI
     ) { }
 
     async execute() {
@@ -32,7 +25,9 @@ export class CreateDashboardCommand {
             return;
         }
 
-        const content = this.generateDashboard(user, repos);
+        const contribData = await this.githubAPI.getContributionData(user.login);
+
+        const content = this.generateDashboard(user, repos, contribData);
 
         const fileName = 'Project Dashboard.md';
         const folder = this.settings.defaultFolder;
@@ -62,11 +57,19 @@ export class CreateDashboardCommand {
         }
     }
 
-    generateDashboard(user: any, repos: any[]): string {
+    generateDashboard(user: any, repos: any[], contribData?: any): string {
         const totalStars = repos.reduce((acc, r) => acc + r.stars, 0);
         const totalOpenIssues = repos.reduce((acc, r) => acc + r.openIssues, 0);
         // Top 5 repos by stars
         const topRepos = [...repos].sort((a, b) => b.stars - a.stars).slice(0, 5);
+
+        let heatmapSection = '';
+        if (contribData && contribData.contributions) {
+            const contributions = contribData.contributions;
+            heatmapSection = this.renderHeatmapHTML(contributions);
+        } else {
+            heatmapSection = '_Could not load contribution data_';
+        }
 
         return `---
 tags:
@@ -85,7 +88,7 @@ updated: ${new Date().toISOString()}
 </div>
 
 ## 🔥 Activity Heatmap
-![Contribution Graph](https://github-readme-activity-graph.vercel.app/graph?username=${user.login}&theme=react-dark)
+${heatmapSection}
 
 ## 📊 GitHub Stats
 ![GitHub Stats](https://github-readme-stats.vercel.app/api?username=${user.login}&show_icons=true&theme=radical)
@@ -102,6 +105,37 @@ ${topRepos.map(r => `- [${r.repo}](${r.url}) - ⭐ ${r.stars}`).join('\n')}
 - \`Create Project Snapshot\`
 - \`Bulk Import User Repositories\`
 - \`Refresh Project Data\`
+`;
+    }
+
+    renderHeatmapHTML(contributions: any[]): string {
+        // Map levels to colors (GitHub Dark Dimmed style)
+        const colors = ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'];
+
+        const squares = contributions.map(c => {
+            const color = colors[c.level] || colors[0];
+            const title = `${c.count} contributions on ${c.date}`;
+            return `<div title="${title}" style="width: 10px; height: 10px; background-color: ${color}; border-radius: 2px;"></div>`;
+        }).join('');
+
+        return `
+<div style="
+    display: flex; 
+    flex-direction: column; 
+    align-items: flex-start; 
+    background-color: #0d1117; 
+    padding: 15px; 
+    border-radius: 6px; 
+    border: 1px solid #30363d;
+    overflow-x: auto;
+">
+    <div style="display: flex; gap: 3px; flex-wrap: wrap; width: max-content; max-width: 100%;">
+        ${squares}
+    </div>
+    <div style="color: #8b949e; font-size: 12px; margin-top: 10px;">
+        ${contributions.reduce((acc, c) => acc + c.count, 0)} total contributions in the last year
+    </div>
+</div>
 `;
     }
 }

@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import { Notice } from 'obsidian';
+import { Notice, requestUrl } from 'obsidian';
 
 export interface RepoData {
     owner: string;
@@ -68,7 +68,7 @@ export class GitHubAPI {
                 stars: repo.stargazers_count,
                 language: repo.language || 'Unknown',
                 lastCommit: {
-                    message: 'Fetch details for more info', // Optimization: don't fetch commits for list
+                    message: 'Fetch details for more info',
                     date: repo.updated_at,
                     author: repo.owner.login,
                     sha: ''
@@ -97,10 +97,13 @@ export class GitHubAPI {
 
     async getContributionData(username: string): Promise<any> {
         try {
-            // Using a public API to get contribution data without needing GraphQL/Token scopes
-            const response = await fetch(`https://github-contributions-api.jogruber.de/v4/${username}?y=last`);
-            if (!response.ok) return null;
-            return await response.json();
+            // Use requestUrl to avoid CORS issues within Obsidian
+            const response = await requestUrl({
+                url: `https://github-contributions-api.jogruber.de/v4/${username}?y=last`
+            });
+
+            if (response.status !== 200) return null;
+            return response.json;
         } catch (error) {
             console.error('Error fetching contributions:', error);
             return null;
