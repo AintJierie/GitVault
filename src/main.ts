@@ -141,6 +141,8 @@ export default class ProjectSnapshotPlugin extends Plugin {
 interface CommandItem {
     label: string;
     id: string;
+    icon: string;
+    description: string;
 }
 
 class ProjectSnapshotMenuModal extends SuggestModal<CommandItem> {
@@ -149,24 +151,35 @@ class ProjectSnapshotMenuModal extends SuggestModal<CommandItem> {
     constructor(app: App, plugin: ProjectSnapshotPlugin) {
         super(app);
         this.plugin = plugin;
-        this.setPlaceholder('Select a command...');
+        this.setPlaceholder('🔍 Search commands...');
     }
 
     getSuggestions(query: string): CommandItem[] {
         const commands: CommandItem[] = [
-            { label: 'Create Project Snapshot from GitHub URL', id: 'create-snapshot' },
-            { label: 'Open Issue Tracker', id: 'issue-tracker' },
-            { label: 'View Pull Requests', id: 'view-prs' },
-            { label: 'Refresh Project Data', id: 'refresh-data' },
-            { label: 'Create Project Dashboard', id: 'create-dashboard' },
-            { label: 'Compare Two Repositories', id: 'compare-repos' }
+            { label: 'Create Project Snapshot', id: 'create-snapshot', icon: '📸', description: 'Create a note from a GitHub URL' },
+            { label: 'Bulk Import Repositories', id: 'bulk-import', icon: '📦', description: 'Import all your GitHub repos at once' },
+            { label: 'Create Project Dashboard', id: 'create-dashboard', icon: '📊', description: 'Generate an overview of all projects' },
+            { label: 'Compare Repositories', id: 'compare-repos', icon: '⚔️', description: 'Side-by-side repository comparison' },
+            { label: 'Open Issue Tracker', id: 'issue-tracker', icon: '🐛', description: 'View and manage GitHub issues' },
+            { label: 'View Pull Requests', id: 'view-prs', icon: '🔀', description: 'Browse open pull requests' },
+            { label: 'Refresh Project Data', id: 'refresh-data', icon: '🔄', description: 'Update current project note' }
         ];
 
-        return commands.filter(cmd => cmd.label.toLowerCase().includes(query.toLowerCase()));
+        return commands.filter(cmd => 
+            cmd.label.toLowerCase().includes(query.toLowerCase()) ||
+            cmd.description.toLowerCase().includes(query.toLowerCase())
+        );
     }
 
     renderSuggestion(cmd: CommandItem, el: HTMLElement) {
-        el.createEl('div', { text: cmd.label });
+        el.style.cssText = 'display: flex; align-items: center; gap: 12px; padding: 10px 12px;';
+        
+        const iconEl = el.createSpan({ text: cmd.icon });
+        iconEl.style.cssText = 'font-size: 1.3em; min-width: 28px; text-align: center;';
+        
+        const textContainer = el.createDiv();
+        textContainer.createDiv({ text: cmd.label }).style.fontWeight = '600';
+        textContainer.createDiv({ text: cmd.description }).style.cssText = 'font-size: 0.85em; color: var(--text-muted);';
     }
 
     async onChooseSuggestion(cmd: CommandItem, evt: MouseEvent | KeyboardEvent) {

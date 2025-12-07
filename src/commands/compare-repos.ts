@@ -61,44 +61,132 @@ export class CompareReposCommand {
     }
 
     generateComparisonNote(repos: RepoData[]): string {
-        const repoHeaders = repos.map(r => `[${r.repo}](${r.url})`).join(' | ');
-        const separator = repos.map(() => ':---').join(' | ');
-
-        // Helpers
-        const getStars = () => repos.map(r => r.stars).join(' | ');
-        const getForks = () => repos.map(r => r.forks).join(' | ');
-        const getIssues = () => repos.map(r => r.openIssues).join(' | ');
-        const getLang = () => repos.map(r => r.language || 'N/A').join(' | ');
-        const getLastCommit = () => repos.map(r => r.lastCommit.date.split('T')[0]).join(' | ');
-        const getAge = () => repos.map(r => formatDistanceToNow(new Date(r.createdAt), { addSuffix: true })).join(' | ');
+        const maxStars = Math.max(...repos.map(r => r.stars));
+        const maxForks = Math.max(...repos.map(r => r.forks));
+        const maxIssues = Math.max(...repos.map(r => r.openIssues));
 
         return `---
 tags:
   - project-comparison
+  - github
 date: ${new Date().toISOString()}
 ---
 
-# Comparison: ${repos.map(r => r.fullName).join(' vs ')}
+# ⚔️ Repository Comparison
 
-| Metric | ${repoHeaders} |
-| :--- | ${separator} |
-| **Stars** | ${getStars()} |
-| **Forks** | ${getForks()} |
-| **Issues** | ${getIssues()} |
-| **Language** | ${getLang()} |
-| **Last Commit** | ${getLastCommit()} |
-| **Created** | ${getAge()} |
-| **Description** | ${repos.map(r => r.description).join(' | ')} |
+<div style="text-align: center; margin: 20px 0;">
+    <span style="font-size: 1.5em; font-weight: bold;">${repos.map(r => r.repo).join(' vs ')}</span>
+</div>
 
-## Winner?
+## 📊 Side by Side
+
+<div style="display: grid; grid-template-columns: repeat(${repos.length}, 1fr); gap: 16px; margin: 20px 0;">
+${repos.map(r => `<div style="background: var(--background-secondary); border-radius: 12px; padding: 20px; text-align: center;">
+    <div style="font-size: 1.3em; font-weight: bold; margin-bottom: 12px; border-bottom: 2px solid var(--interactive-accent); padding-bottom: 12px;">
+        <a href="${r.url}" style="color: var(--text-normal);">${r.repo}</a>
+    </div>
+    <div style="color: var(--text-muted); font-size: 0.9em; margin-bottom: 16px; min-height: 40px;">${r.description || 'No description'}</div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="background: var(--background-primary); padding: 12px; border-radius: 8px;">
+            <div style="font-size: 1.8em; font-weight: bold; color: #f59e0b;">⭐ ${r.stars.toLocaleString()}</div>
+            <div style="color: var(--text-muted); font-size: 0.8em;">Stars</div>
+        </div>
+        <div style="background: var(--background-primary); padding: 12px; border-radius: 8px;">
+            <div style="font-size: 1.8em; font-weight: bold; color: #8b5cf6;">🍴 ${r.forks.toLocaleString()}</div>
+            <div style="color: var(--text-muted); font-size: 0.8em;">Forks</div>
+        </div>
+        <div style="background: var(--background-primary); padding: 12px; border-radius: 8px;">
+            <div style="font-size: 1.8em; font-weight: bold; color: ${r.openIssues > 20 ? '#ef4444' : '#22c55e'};">🐛 ${r.openIssues}</div>
+            <div style="color: var(--text-muted); font-size: 0.8em;">Open Issues</div>
+        </div>
+    </div>
+    <div style="margin-top: 16px; padding: 8px; background: var(--background-primary); border-radius: 6px; font-size: 0.9em;">
+        💻 ${r.language || 'Unknown'}
+    </div>
+</div>`).join('\n')}
+</div>
+
+## 📈 Visual Comparison
+
+### ⭐ Stars
+<div style="margin: 12px 0;">
+${repos.map(r => {
+    const percentage = maxStars > 0 ? (r.stars / maxStars) * 100 : 0;
+    return `<div style="display: flex; align-items: center; gap: 12px; margin: 8px 0;">
+    <span style="min-width: 120px; font-weight: 500;">${r.repo}</span>
+    <div style="flex: 1; background: var(--background-modifier-border); border-radius: 4px; height: 24px; overflow: hidden;">
+        <div style="width: ${percentage}%; height: 100%; background: linear-gradient(90deg, #f59e0b, #fbbf24); border-radius: 4px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; color: white; font-weight: bold; font-size: 0.85em;">${r.stars.toLocaleString()}</div>
+    </div>
+</div>`;
+}).join('\n')}
+</div>
+
+### 🍴 Forks
+<div style="margin: 12px 0;">
+${repos.map(r => {
+    const percentage = maxForks > 0 ? (r.forks / maxForks) * 100 : 0;
+    return `<div style="display: flex; align-items: center; gap: 12px; margin: 8px 0;">
+    <span style="min-width: 120px; font-weight: 500;">${r.repo}</span>
+    <div style="flex: 1; background: var(--background-modifier-border); border-radius: 4px; height: 24px; overflow: hidden;">
+        <div style="width: ${percentage}%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa); border-radius: 4px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; color: white; font-weight: bold; font-size: 0.85em;">${r.forks.toLocaleString()}</div>
+    </div>
+</div>`;
+}).join('\n')}
+</div>
+
+### 🐛 Open Issues
+<div style="margin: 12px 0;">
+${repos.map(r => {
+    const percentage = maxIssues > 0 ? (r.openIssues / maxIssues) * 100 : 0;
+    const barColor = r.openIssues > 20 ? '#ef4444, #f87171' : '#22c55e, #4ade80';
+    return `<div style="display: flex; align-items: center; gap: 12px; margin: 8px 0;">
+    <span style="min-width: 120px; font-weight: 500;">${r.repo}</span>
+    <div style="flex: 1; background: var(--background-modifier-border); border-radius: 4px; height: 24px; overflow: hidden;">
+        <div style="width: ${percentage}%; height: 100%; background: linear-gradient(90deg, ${barColor}); border-radius: 4px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; color: white; font-weight: bold; font-size: 0.85em;">${r.openIssues}</div>
+    </div>
+</div>`;
+}).join('\n')}
+</div>
+
+## 📋 Detailed Comparison
+
+| Metric | ${repos.map(r => `**${r.repo}**`).join(' | ')} |
+| :--- | ${repos.map(() => ':---:').join(' | ')} |
+| ⭐ Stars | ${repos.map(r => r.stars.toLocaleString()).join(' | ')} |
+| 🍴 Forks | ${repos.map(r => r.forks.toLocaleString()).join(' | ')} |
+| 🐛 Issues | ${repos.map(r => r.openIssues).join(' | ')} |
+| 💻 Language | ${repos.map(r => r.language || 'N/A').join(' | ')} |
+| 📅 Last Commit | ${repos.map(r => r.lastCommit.date.split('T')[0]).join(' | ')} |
+| 🎂 Created | ${repos.map(r => formatDistanceToNow(new Date(r.createdAt), { addSuffix: true })).join(' | ')} |
+
+## 🏆 Winner Analysis
+
 ${this.calculateWinner(repos)}
+
+---
+
+<div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.85em; padding-top: 12px;">
+    <span>📦 Project Snapshot Comparison</span>
+    <span>Generated: ${new Date().toLocaleString()}</span>
+</div>
 `;
     }
 
     calculateWinner(repos: RepoData[]): string {
-        const sortedByStars = [...repos].sort((a, b) => b.stars - a.stars);
-        const winner = sortedByStars[0];
-        return `**${winner.fullName}** is the most popular with **${winner.stars}** stars.`;
+        const metrics = [
+            { name: 'Most Popular', emoji: '⭐', winner: [...repos].sort((a, b) => b.stars - a.stars)[0], field: 'stars' },
+            { name: 'Most Forked', emoji: '🍴', winner: [...repos].sort((a, b) => b.forks - a.forks)[0], field: 'forks' },
+            { name: 'Most Active', emoji: '🔥', winner: [...repos].sort((a, b) => new Date(b.lastCommit.date).getTime() - new Date(a.lastCommit.date).getTime())[0], field: 'lastCommit' },
+            { name: 'Best Maintained', emoji: '✨', winner: [...repos].sort((a, b) => a.openIssues - b.openIssues)[0], field: 'openIssues' }
+        ];
+
+        return `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+${metrics.map(m => `<div style="background: var(--background-secondary); padding: 16px; border-radius: 10px; text-align: center;">
+    <div style="font-size: 1.5em; margin-bottom: 8px;">${m.emoji}</div>
+    <div style="font-weight: bold; color: var(--text-muted); font-size: 0.85em; margin-bottom: 4px;">${m.name}</div>
+    <div style="font-size: 1.1em; font-weight: 600;">${m.winner.repo}</div>
+</div>`).join('\n')}
+</div>`;
     }
 }
 

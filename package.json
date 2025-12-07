@@ -13,7 +13,7 @@
 		"github",
 		"project-management"
 	],
-	"author": "Your Name",
+	"author": "Jierie Ezequiel Jacla",
 	"license": "MIT",
 	"dependencies": {
 		"@octokit/rest": "^20.0.0",
