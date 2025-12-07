@@ -55,23 +55,24 @@ export class RefreshDataCommand {
         // Let's focus on Snapshots first.
 
         const repoUrl = frontmatter.repo_url;
+        const branch = frontmatter.branch; // Optional branch support
         if (repoUrl) {
-            if (!silent) new Notice(`Refreshing snapshot for ${repoUrl}...`);
-            await this.refreshSnapshot(file, repoUrl, silent);
+            if (!silent) new Notice(`Refreshing snapshot for ${repoUrl}${branch ? ` (${branch})` : ''}...`);
+            await this.refreshSnapshot(file, repoUrl, branch, silent);
         } else if (!silent) {
             // Only show "Not a project snapshot" if manual
             new Notice('Current file is not a Project Snapshot');
         }
     }
 
-    async refreshSnapshot(file: TFile, repoUrl: string, silent: boolean) {
+    async refreshSnapshot(file: TFile, repoUrl: string, branch: string | undefined, silent: boolean) {
         const parsed = this.githubAPI.parseGitHubUrl(repoUrl);
         if (!parsed) {
             new Notice('Invalid GitHub URL in frontmatter');
             return;
         }
 
-        const data = await this.githubAPI.fetchRepoData(parsed.owner, parsed.repo);
+        const data = await this.githubAPI.fetchRepoData(parsed.owner, parsed.repo, branch);
         if (!data) {
             // Notification already handled by githubAPI
             return;

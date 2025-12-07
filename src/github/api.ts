@@ -251,7 +251,21 @@ export class GitHubAPI {
         }
     }
 
-    async fetchRepoData(owner: string, repo: string): Promise<RepoData | null> {
+    async getBranches(owner: string, repo: string): Promise<string[]> {
+        try {
+            const response = await this.octokit.rest.repos.listBranches({
+                owner,
+                repo,
+                per_page: 100
+            });
+            return response.data.map((branch: any) => branch.name);
+        } catch (error) {
+            console.error('Error fetching branches:', error);
+            return [];
+        }
+    }
+
+    async fetchRepoData(owner: string, repo: string, ref?: string): Promise<RepoData | null> {
         try {
             // Fetch repository info
             const repoResponse = await this.octokit.rest.repos.get({
@@ -259,10 +273,11 @@ export class GitHubAPI {
                 repo
             });
 
-            // Fetch latest commit
+            // Fetch latest commit (respecting ref/branch)
             const commitsResponse = await this.octokit.rest.repos.listCommits({
                 owner,
                 repo,
+                sha: ref, // 'sha' parameter can take branch name (ref)
                 per_page: 1
             });
 
@@ -275,6 +290,7 @@ export class GitHubAPI {
                 const readmeResponse = await this.octokit.rest.repos.getReadme({
                     owner,
                     repo,
+                    ref,
                     mediaType: {
                         format: 'raw'
                     }

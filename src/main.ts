@@ -8,6 +8,7 @@ import { BulkImportCommand } from './commands/bulk-import';
 import { CompareReposCommand } from './commands/compare-repos';
 import { IssueTrackerCommand } from './commands/issue-tracker';
 import { ViewPRsCommand } from './commands/view-prs';
+import { SwitchBranchCommand } from './commands/switch-branch';
 
 export default class ProjectSnapshotPlugin extends Plugin {
     settings: ProjectSnapshotSettings;
@@ -87,6 +88,15 @@ export default class ProjectSnapshotPlugin extends Plugin {
             name: 'Project Snapshot: View Pull Requests',
             callback: async () => {
                 const command = new ViewPRsCommand(this.app, this.settings, this.githubAPI);
+                await command.execute();
+            }
+        });
+
+        this.addCommand({
+            id: 'switch-branch',
+            name: 'Project Snapshot: Switch Branch',
+            callback: async () => {
+                const command = new SwitchBranchCommand(this.app, this.settings, this.githubAPI);
                 await command.execute();
             }
         });
@@ -191,6 +201,7 @@ class ProjectSnapshotMenuModal extends SuggestModal<CommandItem> {
             { label: 'Compare Repositories', id: 'compare-repos', icon: '⚔️', description: 'Side-by-side repository comparison' },
             { label: 'Open Issue Tracker', id: 'issue-tracker', icon: '🐛', description: 'View and manage GitHub issues' },
             { label: 'View Pull Requests', id: 'view-prs', icon: '🔀', description: 'Browse open pull requests' },
+            { label: 'Switch Branch', id: 'switch-branch', icon: '🌿', description: 'Switch branch and refresh data' },
             { label: 'Refresh Project Data', id: 'refresh-data', icon: '🔄', description: 'Update current project note' }
         ];
 
@@ -233,6 +244,9 @@ class ProjectSnapshotMenuModal extends SuggestModal<CommandItem> {
                 break;
             case 'bulk-import':
                 new BulkImportCommand(this.app, this.plugin.settings, this.plugin.githubAPI).execute();
+                break;
+            case 'switch-branch':
+                new SwitchBranchCommand(this.app, this.plugin.settings, this.plugin.githubAPI).execute();
                 break;
         }
     }
