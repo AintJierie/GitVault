@@ -40,11 +40,11 @@ export class SwitchBranchCommand {
         }
 
         new BranchSelectModal(this.app, branches, async (selectedBranch) => {
-            await this.updateBranch(activeFile, selectedBranch);
+            await this.updateBranch(activeFile, selectedBranch, repoUrl);
         }).open();
     }
 
-    async updateBranch(file: TFile, branch: string) {
+    async updateBranch(file: TFile, branch: string, repoUrl: string) {
         try {
             await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
                 frontmatter['branch'] = branch;
@@ -52,8 +52,9 @@ export class SwitchBranchCommand {
 
             new Notice(`Switched to branch: ${branch}`);
 
-            // Trigger refresh
-            new RefreshDataCommand(this.app, this.settings, this.githubAPI).execute();
+            // Trigger refresh directly with the known branch to avoid stale cache issues
+            // We pass the branch explicitly because the file cache might not have updated yet
+            await new RefreshDataCommand(this.app, this.settings, this.githubAPI).refreshSnapshot(file, repoUrl, branch, false);
         } catch (error) {
             console.error('Error updating branch:', error);
             new Notice('Failed to update branch.');
