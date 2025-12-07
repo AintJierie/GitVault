@@ -40,7 +40,7 @@ export class ProjectNoteTemplate {
 
         // Stats Cards Row
         sections.push(`<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 20px 0;">`);
-        
+
         if (settings.templateCustomization.includeStars) {
             sections.push(this.createStatCard('⭐', 'Stars', data.stars.toLocaleString(), '#f59e0b'));
         }
@@ -49,7 +49,7 @@ export class ProjectNoteTemplate {
             sections.push(this.createStatCard('🐛', 'Issues', data.openIssues.toString(), data.openIssues > 10 ? '#ef4444' : '#22c55e'));
         }
         sections.push(this.createStatCard('💻', 'Language', data.language || 'N/A', '#3b82f6'));
-        
+
         sections.push(`</div>`);
         sections.push('');
 
@@ -113,6 +113,8 @@ export class ProjectNoteTemplate {
         sections.push(`  <span>📦 Project Snapshot</span>`);
         sections.push(`  <span>Last synced: ${new Date().toLocaleString()}</span>`);
         sections.push(`</div>`);
+        sections.push('');
+        sections.push(`<!-- project-snapshot-end -->`);
 
         return sections.join('\n');
     }
@@ -130,7 +132,7 @@ export class ProjectNoteTemplate {
 
     private static getActivityStatus(lastCommitDate: string): { label: string; color: string; icon: string } {
         const daysSince = Math.floor((Date.now() - new Date(lastCommitDate).getTime()) / (1000 * 60 * 60 * 24));
-        
+
         if (daysSince <= 7) return { label: 'Very Active', color: '#22c55e', icon: '🟢' };
         if (daysSince <= 30) return { label: 'Active', color: '#3b82f6', icon: '🔵' };
         if (daysSince <= 90) return { label: 'Moderate', color: '#f59e0b', icon: '🟡' };
@@ -139,30 +141,30 @@ export class ProjectNoteTemplate {
 
     private static calculateHealthScore(data: RepoData): number {
         let score = 50; // Base score
-        
+
         // Activity bonus (up to +25)
         const daysSinceCommit = Math.floor((Date.now() - new Date(data.lastCommit.date).getTime()) / (1000 * 60 * 60 * 24));
         if (daysSinceCommit <= 7) score += 25;
         else if (daysSinceCommit <= 30) score += 15;
         else if (daysSinceCommit <= 90) score += 5;
         else score -= 10;
-        
+
         // Stars bonus (up to +15)
         if (data.stars >= 1000) score += 15;
         else if (data.stars >= 100) score += 10;
         else if (data.stars >= 10) score += 5;
-        
+
         // Issue penalty (up to -15)
         if (data.openIssues > 50) score -= 15;
         else if (data.openIssues > 20) score -= 10;
         else if (data.openIssues > 10) score -= 5;
-        
+
         // Description bonus
         if (data.description) score += 5;
-        
+
         // Topics bonus
         if (data.topics && data.topics.length > 0) score += 5;
-        
+
         return Math.max(0, Math.min(100, score));
     }
 

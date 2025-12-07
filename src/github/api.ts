@@ -24,10 +24,19 @@ export interface RepoData {
 
 export class GitHubAPI {
     private octokit: Octokit;
+    public rateLimitRemaining: number | null = null;
+    public onRateLimitChange: ((remaining: number) => void) | null = null;
 
     constructor(token?: string) {
         this.octokit = new Octokit({
             auth: token || undefined
+        });
+
+        // Add hook to capture headers from every response
+        this.octokit.hook.wrap('request', async (request, options) => {
+            const response = await request(options);
+            this.updateRateLimit(response);
+            return response;
         });
     }
 
@@ -35,6 +44,25 @@ export class GitHubAPI {
         this.octokit = new Octokit({
             auth: token || undefined
         });
+
+        // Re-add hook
+        this.octokit.hook.wrap('request', async (request, options) => {
+            const response = await request(options);
+            this.updateRateLimit(response);
+            return response;
+        });
+    }
+
+    private updateRateLimit(response: any) {
+        if (response.headers && response.headers['x-ratelimit-remaining']) {
+            const remaining = parseInt(response.headers['x-ratelimit-remaining'], 10);
+            if (!isNaN(remaining)) {
+                this.rateLimitRemaining = remaining;
+                if (this.onRateLimitChange) {
+                    this.onRateLimitChange(remaining);
+                }
+            }
+        }
     }
 
     parseGitHubUrl(url: string): { owner: string; repo: string } | null {

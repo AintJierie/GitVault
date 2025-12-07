@@ -4,8 +4,8 @@
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "Track GitHub projects with live stats, commits, and deployment status",
-	"author": "Your Name",
-	"authorUrl": "https://github.com/yourusername",
-	"fundingUrl": "https://buymeacoffee.com/yourusername",
+	"author": "Jierie Ezequiel Jacla",
+	"authorUrl": "https://github.com/AintJierie",
+	"fundingUrl": "https://buymeacoffee.com/AintJierie",
 	"isDesktopOnly": false
 }
