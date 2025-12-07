@@ -87,7 +87,7 @@ updated: ${new Date().toISOString()}
     </div>
 </div>
 
-## 🔥 Activity Heatmap
+## 📉 Contribution Graph
 ${heatmapSection}
 
 ## 📊 GitHub Stats
