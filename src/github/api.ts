@@ -110,6 +110,68 @@ export class GitHubAPI {
         }
     }
 
+    async getIssues(owner: string, repo: string): Promise<any[]> {
+        try {
+            const response = await this.octokit.rest.issues.listForRepo({
+                owner,
+                repo,
+                state: 'open',
+                per_page: 50
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching issues:', error);
+            return [];
+        }
+    }
+
+    async createIssue(owner: string, repo: string, title: string, body: string): Promise<any> {
+        try {
+            const response = await this.octokit.rest.issues.create({
+                owner,
+                repo,
+                title,
+                body
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error creating issue:', error);
+            throw error;
+        }
+    }
+
+    async getPullRequests(owner: string, repo: string): Promise<any[]> {
+        try {
+            const response = await this.octokit.rest.pulls.list({
+                owner,
+                repo,
+                state: 'open',
+                per_page: 50
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching PRs:', error);
+            return [];
+        }
+    }
+
+    async getPullRequestDiff(owner: string, repo: string, pull_number: number): Promise<string | null> {
+        try {
+            const response = await this.octokit.rest.pulls.get({
+                owner,
+                repo,
+                pull_number,
+                mediaType: {
+                    format: 'diff'
+                }
+            });
+            return response.data as unknown as string;
+        } catch (error) {
+            console.error('Error fetching PR diff:', error);
+            return null;
+        }
+    }
+
     async fetchRepoData(owner: string, repo: string): Promise<RepoData | null> {
         try {
             // Fetch repository info

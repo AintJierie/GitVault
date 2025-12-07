@@ -6,6 +6,8 @@ import { RefreshDataCommand } from './commands/refresh-data';
 import { CreateDashboardCommand } from './commands/create-dashboard';
 import { BulkImportCommand } from './commands/bulk-import';
 import { CompareReposCommand } from './commands/compare-repos';
+import { IssueTrackerCommand } from './commands/issue-tracker';
+import { ViewPRsCommand } from './commands/view-prs';
 
 export default class ProjectSnapshotPlugin extends Plugin {
     settings: ProjectSnapshotSettings;
@@ -68,6 +70,24 @@ export default class ProjectSnapshotPlugin extends Plugin {
             name: 'Compare Two Repositories',
             callback: async () => {
                 const command = new CompareReposCommand(this.app, this.settings, this.githubAPI);
+                await command.execute();
+            }
+        });
+
+        this.addCommand({
+            id: 'issue-tracker',
+            name: 'Open Issue Tracker',
+            callback: async () => {
+                const command = new IssueTrackerCommand(this.app, this.settings, this.githubAPI);
+                await command.execute();
+            }
+        });
+
+        this.addCommand({
+            id: 'view-prs',
+            name: 'View Pull Requests',
+            callback: async () => {
+                const command = new ViewPRsCommand(this.app, this.settings, this.githubAPI);
                 await command.execute();
             }
         });
