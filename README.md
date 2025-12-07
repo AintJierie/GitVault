@@ -1,6 +1,6 @@
-# 📦 GitVault for Obsidian (v0.0.1)
+# 📦 GitVault (v0.0.1)
 
-**GitVault** is a powerful Obsidian plugin that integrates your GitHub projects directly into your vault. Keep track of repositories, branches, issues, and pull requests without ever leaving Obsidian.
+**GitVault** is a powerful plugin that integrates your GitHub projects directly into your vault. Keep track of repositories, branches, issues, and pull requests without ever leaving the app.
 
 ## 🚀 Features
 
@@ -11,7 +11,7 @@
 - **Branch Support**: Switch branches on the fly and track stats/README for specific branches.
 
 ### 🛠️ Developer Tools
-- **Issue Tracker**: View and manage open issues directly in Obsidian.
+- **Issue Tracker**: View and manage open issues directly in your vault.
 - **Pull Request Viewer**: Browse PRs, view commit history, and inspect file diffs in a large, responsive modal.
 - **View Commits**: Scroll through the commit history of your current branch and see exactly what changed.
 - **Compare Repositories**: Side-by-side comparison of two repositories ("Battle Mode").
@@ -51,7 +51,7 @@ Enable **Auto-Refresh** in settings to keep your project stats updated in the ba
 ---
 
 ## 🎨 Styling
-The plugin uses native Obsidian variables and is fully compatible with light and dark modes. Modals are designed to be responsive, using 90% of the screen width for optimal code viewing.
+The plugin uses native variables and is fully compatible with light and dark modes. Modals are designed to be responsive, using 90% of the screen width for optimal code viewing.
 
 ---
 
