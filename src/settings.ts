@@ -138,8 +138,8 @@ export class ProjectSnapshotSettingTab extends PluginSettingTab {
             .setDesc('Import all repositories from a GitHub user.')
             .addButton(button => button
                 .setButtonText('Import Now')
-                .onClick(async () => {
-                    new BulkImportCommand(this.app, this.plugin.settings, this.plugin.githubAPI).execute();
+                .onClick(() => {
+                    void new BulkImportCommand(this.app, this.plugin.settings, this.plugin.githubAPI).execute();
                 }));
     }
 }

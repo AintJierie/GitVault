@@ -1,6 +1,6 @@
 import { App, Notice, TFile } from 'obsidian';
 import { ProjectSnapshotSettings } from '../settings';
-import { GitHubAPI } from '../github/api';
+import { GitHubAPI, RepoData, GitHubUser, ContributionData } from '../github/api';
 
 export class CreateDashboardCommand {
     constructor(
@@ -40,7 +40,7 @@ export class CreateDashboardCommand {
 
             const existing = this.app.vault.getAbstractFileByPath(filePath);
             if (existing) {
-                await this.app.vault.modify(existing as any, content);
+                await this.app.vault.modify(existing as TFile, content);
                 new Notice('Dashboard updated!');
             } else {
                 await this.app.vault.create(filePath, content);
@@ -49,15 +49,14 @@ export class CreateDashboardCommand {
 
             const file = this.app.vault.getAbstractFileByPath(filePath);
             if (file) {
-                await this.app.workspace.getLeaf().openFile(file as any);
+                await this.app.workspace.getLeaf().openFile(file as TFile);
             }
-        } catch (e) {
-            console.error(e);
+        } catch {
             new Notice('Error creating dashboard');
         }
     }
 
-    generateDashboard(user: any, repos: any[], contribData?: any): string {
+    generateDashboard(user: GitHubUser | null, repos: RepoData[], contribData?: ContributionData | null): string {
         const totalStars = repos.reduce((acc, r) => acc + r.stars, 0);
         const totalForks = repos.reduce((acc, r) => acc + (r.forks || 0), 0);
         const totalOpenIssues = repos.reduce((acc, r) => acc + r.openIssues, 0);
@@ -100,13 +99,13 @@ updated: ${new Date().toISOString()}
 # 🚀 GitHub Dashboard
 
 <div style="display: flex; gap: 20px; align-items: center; padding: 20px; background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-primary) 100%); border-radius: 16px; margin-bottom: 24px;">
-    <img src="${user.avatar_url}" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--interactive-accent); box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+    <img src="${user?.avatar_url || ''}" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--interactive-accent); box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
     <div>
-        <h2 style="margin: 0 0 4px 0; font-size: 1.5em;">@${user.login}</h2>
-        <p style="margin: 0; color: var(--text-muted);">${user.bio || 'GitHub Developer'}</p>
+        <h2 style="margin: 0 0 4px 0; font-size: 1.5em;">@${user?.login || 'user'}</h2>
+        <p style="margin: 0; color: var(--text-muted);">${user?.bio || 'GitHub Developer'}</p>
         <div style="display: flex; gap: 16px; margin-top: 8px; font-size: 0.9em;">
-            <span>📍 ${user.location || 'Earth'}</span>
-            <span>👥 ${user.followers || 0} followers</span>
+            <span>📍 ${user?.location || 'Earth'}</span>
+            <span>👥 ${user?.followers || 0} followers</span>
             <span>📦 ${repos.length} repos</span>
         </div>
     </div>
@@ -168,9 +167,9 @@ ${topLanguages.map(([lang, count]) => `<span style="background: ${this.getLangua
 ## ⚡ Quick Actions
 
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 20px 0;">
-    <a href="https://github.com/${user.login}" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--interactive-accent); color: white; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: 500;">🔗 View Profile</a>
-    <a href="https://github.com/${user.login}?tab=repositories" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--background-modifier-border); padding: 12px 20px; border-radius: 8px; text-decoration: none; color: var(--text-normal); font-weight: 500;">📦 All Repos</a>
-    <a href="https://github.com/${user.login}?tab=stars" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--background-modifier-border); padding: 12px 20px; border-radius: 8px; text-decoration: none; color: var(--text-normal); font-weight: 500;">⭐ Starred</a>
+    <a href="https://github.com/${user?.login || ''}" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--interactive-accent); color: white; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: 500;">🔗 View Profile</a>
+    <a href="https://github.com/${user?.login || ''}?tab=repositories" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--background-modifier-border); padding: 12px 20px; border-radius: 8px; text-decoration: none; color: var(--text-normal); font-weight: 500;">📦 All Repos</a>
+    <a href="https://github.com/${user?.login || ''}?tab=stars" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--background-modifier-border); padding: 12px 20px; border-radius: 8px; text-decoration: none; color: var(--text-normal); font-weight: 500;">⭐ Starred</a>
 </div>
 
 ---
@@ -214,7 +213,7 @@ ${topLanguages.map(([lang, count]) => `<span style="background: ${this.getLangua
         return colors[lang] || '#6366f1';
     }
 
-    renderHeatmapHTML(contributions: any[]): string {
+    renderHeatmapHTML(contributions: Array<{ date: string; count: number; level: number }>): string {
         // Map levels to colors (GitHub style)
         const colors = ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'];
         const totalContributions = contributions.reduce((acc, c) => acc + c.count, 0);

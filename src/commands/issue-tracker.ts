@@ -1,6 +1,6 @@
-import { App, Modal, Notice, Setting, MarkdownRenderer, Component, setIcon } from 'obsidian';
+import { App, Modal, Notice, MarkdownRenderer, Component, setIcon } from 'obsidian';
 import { ProjectSnapshotSettings } from '../settings';
-import { GitHubAPI } from '../github/api';
+import { GitHubAPI, GitHubIssue } from '../github/api';
 import { CreateIssueModal } from './create-issue';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -50,7 +50,7 @@ export class IssueTrackerCommand {
 export class IssueTrackerModal extends Modal {
     constructor(
         app: App,
-        private issues: any[],
+        private issues: GitHubIssue[],
         private repoInfo: { owner: string; repo: string },
         private githubAPI: GitHubAPI
     ) {
@@ -60,119 +60,85 @@ export class IssueTrackerModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.style.padding = '0';
+        contentEl.addClass('ps-content-no-padding');
 
         // Header
-        const header = contentEl.createDiv();
-        header.style.cssText = 'background: var(--background-secondary); padding: 20px; border-bottom: 1px solid var(--background-modifier-border);';
+        const header = contentEl.createDiv({ cls: 'ps-modal-header' });
+        const headerRow = header.createDiv({ cls: 'ps-header-between' });
 
-        const headerRow = header.createDiv();
-        headerRow.style.cssText = 'display: flex; justify-content: space-between; align-items: center;';
+        const titleSection = headerRow.createDiv({ cls: 'ps-title-section' });
 
-        const titleSection = headerRow.createDiv();
-        titleSection.style.cssText = 'display: flex; align-items: center; gap: 12px;';
-
-        const iconEl = titleSection.createSpan();
+        const iconEl = titleSection.createSpan({ cls: 'ps-icon-accent' });
         setIcon(iconEl, 'alert-circle');
-        iconEl.style.cssText = 'color: var(--interactive-accent); font-size: 1.3em;';
 
-        const titleEl = titleSection.createEl('h2', { text: 'Issue Tracker' });
-        titleEl.style.cssText = 'margin: 0; font-size: 1.3em;';
+        titleSection.createEl('h2', { text: 'Issue tracker', cls: 'ps-modal-title' });
 
-        const createBtn = headerRow.createEl('button', { text: '+ New Issue', cls: 'mod-cta' });
-        createBtn.style.cssText = 'display: flex; align-items: center; gap: 6px;';
+        const createBtn = headerRow.createEl('button', { text: '+ New issue', cls: 'mod-cta ps-btn-with-icon' });
         createBtn.onclick = () => {
             this.close();
             new CreateIssueModal(this.app, this.repoInfo, this.githubAPI).open();
         };
 
-        const repoName = header.createDiv({ text: `${this.repoInfo.owner}/${this.repoInfo.repo}` });
-        repoName.style.cssText = 'color: var(--text-muted); font-size: 0.9em; margin-top: 4px;';
+        header.createDiv({ text: `${this.repoInfo.owner}/${this.repoInfo.repo}`, cls: 'ps-modal-subtitle' });
 
         // Stats bar
-        const statsBar = contentEl.createDiv();
-        statsBar.style.cssText = 'display: flex; gap: 20px; padding: 12px 20px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);';
-
+        const statsBar = contentEl.createDiv({ cls: 'ps-stats-bar' });
         const openCount = this.issues.filter(i => i.state === 'open').length;
-        statsBar.createSpan({ text: `🟢 ${openCount} Open` }).style.cssText = 'font-size: 0.9em; font-weight: 500;';
+        statsBar.createSpan({ text: `🟢 ${openCount} open` });
 
         // List container
-        const listContainer = contentEl.createDiv();
-        listContainer.style.cssText = 'max-height: 60vh; overflow-y: auto;';
+        const listContainer = contentEl.createDiv({ cls: 'ps-list-container' });
 
         if (this.issues.length === 0) {
-            const emptyState = listContainer.createDiv();
-            emptyState.style.cssText = 'text-align: center; padding: 40px 20px; color: var(--text-muted);';
-            emptyState.createEl('div', { text: '✨' }).style.fontSize = '3em';
-            emptyState.createEl('p', { text: 'No open issues found!' }).style.marginTop = '12px';
-            emptyState.createEl('p', { text: 'Create a new issue to get started' }).style.cssText = 'font-size: 0.9em; opacity: 0.7;';
+            const emptyState = listContainer.createDiv({ cls: 'ps-empty-state' });
+            emptyState.createEl('div', { text: '✨', cls: 'ps-empty-state-icon' });
+            emptyState.createEl('p', { text: 'No open issues found!', cls: 'ps-empty-state-text' });
+            emptyState.createEl('p', { text: 'Create a new issue to get started', cls: 'ps-text-muted ps-text-sm' });
         } else {
             this.issues.forEach(issue => {
-                const item = listContainer.createDiv();
-                item.style.cssText = `
-                    display: flex; 
-                    align-items: flex-start;
-                    gap: 12px;
-                    padding: 16px 20px;
-                    border-bottom: 1px solid var(--background-modifier-border);
-                    cursor: pointer;
-                    transition: background 0.15s;
-                `;
-
-                item.addEventListener('mouseenter', () => item.style.background = 'var(--background-secondary)');
-                item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+                const item = listContainer.createDiv({ cls: 'ps-item-card' });
 
                 // Issue icon
-                const issueIcon = item.createDiv();
-                issueIcon.style.cssText = 'margin-top: 2px;';
+                const issueIcon = item.createDiv({ cls: 'ps-item-icon' });
                 const iconSpan = issueIcon.createSpan();
                 setIcon(iconSpan, 'circle-dot');
-                iconSpan.style.color = issue.state === 'open' ? '#22c55e' : '#8b5cf6';
+                iconSpan.addClass(issue.state === 'open' ? 'ps-icon-green' : 'ps-icon-purple');
 
                 // Content
-                const content = item.createDiv();
-                content.style.flex = '1';
-
-                const titleEl = content.createDiv({ text: issue.title });
-                titleEl.style.cssText = 'font-weight: 600; margin-bottom: 6px; color: var(--text-normal); font-size: 1.05em;';
+                const content = item.createDiv({ cls: 'ps-item-content' });
+                content.createDiv({ text: issue.title, cls: 'ps-item-title' });
 
                 // Metadata row
-                const metaEl = content.createDiv();
-                metaEl.style.cssText = 'display: flex; gap: 10px; font-size: 0.85em; color: var(--text-muted); flex-wrap: wrap; align-items: center;';
+                const metaEl = content.createDiv({ cls: 'ps-item-meta' });
 
-                metaEl.createSpan({ text: `#${issue.number}` }).style.fontFamily = 'var(--font-monospace)';
+                metaEl.createSpan({ text: `#${issue.number}`, cls: 'ps-mono' });
                 
                 const timeAgo = formatDistanceToNow(new Date(issue.created_at), { addSuffix: true });
-                metaEl.createSpan({ text: `opened ${timeAgo} by ${issue.user.login}` });
+                metaEl.createSpan({ text: `opened ${timeAgo} by ${issue.user?.login || 'unknown'}` });
 
                 // Comments count
                 if (issue.comments > 0) {
-                    const commentsEl = metaEl.createSpan({ text: `💬 ${issue.comments}` });
-                    commentsEl.style.cssText = 'display: flex; align-items: center; gap: 4px;';
+                    metaEl.createSpan({ text: `💬 ${issue.comments}`, cls: 'ps-comments-badge' });
                 }
 
                 // Labels
                 if (issue.labels && issue.labels.length > 0) {
-                    const labelsRow = content.createDiv();
-                    labelsRow.style.cssText = 'display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;';
+                    const labelsRow = content.createDiv({ cls: 'ps-labels-row' });
                     
-                    issue.labels.forEach((label: any) => {
-                        const lbl = labelsRow.createSpan({ text: label.name });
-                        lbl.style.cssText = `
-                            background: #${label.color};
-                            color: ${this.getContrastColor(label.color)};
-                            padding: 2px 10px;
-                            border-radius: 12px;
-                            font-size: 0.8em;
-                            font-weight: 500;
-                        `;
+                    issue.labels.forEach((label) => {
+                        const lbl = labelsRow.createSpan({ text: label.name, cls: 'ps-label' });
+                        lbl.setCssStyles({
+                            background: `#${label.color}`,
+                            color: this.getContrastColor(label.color)
+                        });
                     });
                 }
 
                 // Avatar
-                const avatar = item.createEl('img');
-                avatar.src = issue.user.avatar_url;
-                avatar.style.cssText = 'width: 32px; height: 32px; border-radius: 50%;';
+                const avatar = item.createEl('img', { cls: 'ps-item-avatar' });
+                if (issue.user?.avatar_url) {
+                    avatar.src = issue.user.avatar_url;
+                }
 
                 item.addEventListener('click', () => {
                     new IssueDetailModal(this.app, issue).open();
@@ -182,9 +148,9 @@ export class IssueTrackerModal extends Modal {
     }
 
     getContrastColor(hexColor: string): string {
-        const r = parseInt(hexColor.substr(0, 2), 16);
-        const g = parseInt(hexColor.substr(2, 2), 16);
-        const b = parseInt(hexColor.substr(4, 2), 16);
+        const r = parseInt(hexColor.substring(0, 2), 16);
+        const g = parseInt(hexColor.substring(2, 4), 16);
+        const b = parseInt(hexColor.substring(4, 6), 16);
         const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
         return yiq >= 128 ? '#000' : '#fff';
     }
@@ -196,7 +162,7 @@ export class IssueTrackerModal extends Modal {
 }
 
 class IssueDetailModal extends Modal {
-    constructor(app: App, private issue: any) {
+    constructor(app: App, private issue: GitHubIssue) {
         super(app);
     }
 
@@ -204,83 +170,62 @@ class IssueDetailModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
         contentEl.addClass('markdown-preview-view');
-        contentEl.style.cssText = 'padding: 0; width: 700px; max-width: 90vw;';
+        contentEl.addClass('ps-content-no-padding');
+        contentEl.addClass('ps-modal-medium');
 
         // Header
-        const header = contentEl.createDiv();
-        header.style.cssText = 'background: var(--background-secondary); padding: 20px; border-bottom: 1px solid var(--background-modifier-border);';
-
-        const titleRow = header.createDiv();
-        titleRow.style.cssText = 'display: flex; align-items: flex-start; gap: 12px;';
+        const header = contentEl.createDiv({ cls: 'ps-modal-header' });
+        const titleRow = header.createDiv({ cls: 'ps-modal-title-row' });
 
         // Status badge
-        const badge = titleRow.createSpan({ text: this.issue.state.toUpperCase() });
-        badge.style.cssText = `
-            background: ${this.issue.state === 'open' ? '#22c55e' : '#8b5cf6'};
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75em;
-            font-weight: 600;
-            text-transform: uppercase;
-        `;
+        const badge = titleRow.createSpan({ text: this.issue.state.toUpperCase(), cls: 'ps-issue-badge' });
+        badge.addClass(this.issue.state === 'open' ? 'ps-issue-badge-open' : 'ps-issue-badge-closed');
 
-        const titleEl = titleRow.createEl('h2', { text: this.issue.title });
-        titleEl.style.cssText = 'margin: 0; flex: 1; font-size: 1.2em; line-height: 1.4;';
+        titleRow.createEl('h2', { text: this.issue.title, cls: 'ps-issue-title' });
 
         // Meta info
-        const meta = header.createDiv();
-        meta.style.cssText = 'display: flex; align-items: center; gap: 12px; margin-top: 12px; color: var(--text-muted); font-size: 0.9em;';
+        const meta = header.createDiv({ cls: 'ps-issue-meta' });
 
-        const avatar = meta.createEl('img');
-        avatar.src = this.issue.user.avatar_url;
-        avatar.style.cssText = 'width: 20px; height: 20px; border-radius: 50%;';
+        const avatar = meta.createEl('img', { cls: 'ps-small-avatar' });
+        if (this.issue.user?.avatar_url) {
+            avatar.src = this.issue.user.avatar_url;
+        }
 
-        meta.createSpan({ text: `#${this.issue.number}` }).style.fontFamily = 'var(--font-monospace)';
-        meta.createSpan({ text: `opened by ${this.issue.user.login}` });
+        meta.createSpan({ text: `#${this.issue.number}`, cls: 'ps-mono' });
+        meta.createSpan({ text: `opened by ${this.issue.user?.login || 'unknown'}` });
         
         const timeAgo = formatDistanceToNow(new Date(this.issue.created_at), { addSuffix: true });
         meta.createSpan({ text: timeAgo });
 
         // Labels
         if (this.issue.labels && this.issue.labels.length > 0) {
-            const labelsRow = header.createDiv();
-            labelsRow.style.cssText = 'display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px;';
+            const labelsRow = header.createDiv({ cls: 'ps-labels-row ps-mt-md' });
             
-            this.issue.labels.forEach((label: any) => {
-                const lbl = labelsRow.createSpan({ text: label.name });
-                lbl.style.cssText = `
-                    background: #${label.color};
-                    color: ${this.getContrastColor(label.color)};
-                    padding: 3px 10px;
-                    border-radius: 12px;
-                    font-size: 0.8em;
-                    font-weight: 500;
-                `;
+            this.issue.labels.forEach((label) => {
+                const lbl = labelsRow.createSpan({ text: label.name, cls: 'ps-label' });
+                lbl.setCssStyles({
+                    background: `#${label.color}`,
+                    color: this.getContrastColor(label.color)
+                });
             });
         }
 
         // Body
-        const bodyContainer = contentEl.createDiv();
-        bodyContainer.style.cssText = 'padding: 20px; max-height: 50vh; overflow-y: auto;';
+        const bodyContainer = contentEl.createDiv({ cls: 'ps-body-container' });
 
         if (this.issue.body) {
-            MarkdownRenderer.render(this.app, this.issue.body, bodyContainer, '', new Component());
+            void MarkdownRenderer.render(this.app, this.issue.body, bodyContainer, '', new Component());
         } else {
-            const emptyBody = bodyContainer.createEl('em', { text: 'No description provided.' });
-            emptyBody.style.color = 'var(--text-muted)';
+            bodyContainer.createEl('em', { text: 'No description provided.', cls: 'ps-empty-body' });
         }
 
         // Footer
-        const footer = contentEl.createDiv();
-        footer.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-top: 1px solid var(--background-modifier-border); background: var(--background-secondary);';
+        const footer = contentEl.createDiv({ cls: 'ps-modal-footer' });
 
-        const statsEl = footer.createDiv();
-        statsEl.style.cssText = 'display: flex; gap: 16px; color: var(--text-muted); font-size: 0.9em;';
+        const statsEl = footer.createDiv({ cls: 'ps-footer-stats' });
         statsEl.createSpan({ text: `💬 ${this.issue.comments} comments` });
 
-        const actionsEl = footer.createDiv();
-        actionsEl.style.cssText = 'display: flex; gap: 10px;';
+        const actionsEl = footer.createDiv({ cls: 'ps-flex ps-gap-md' });
 
         const browserBtn = actionsEl.createEl('button', { text: '🔗 View on GitHub' });
         browserBtn.onclick = () => window.open(this.issue.html_url);
@@ -290,9 +235,9 @@ class IssueDetailModal extends Modal {
     }
 
     getContrastColor(hexColor: string): string {
-        const r = parseInt(hexColor.substr(0, 2), 16);
-        const g = parseInt(hexColor.substr(2, 2), 16);
-        const b = parseInt(hexColor.substr(4, 2), 16);
+        const r = parseInt(hexColor.substring(0, 2), 16);
+        const g = parseInt(hexColor.substring(2, 4), 16);
+        const b = parseInt(hexColor.substring(4, 6), 16);
         const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
         return yiq >= 128 ? '#000' : '#fff';
     }

@@ -1,4 +1,4 @@
-import { App, Notice, SuggestModal } from 'obsidian';
+import { App, Notice, SuggestModal, TFile } from 'obsidian';
 import { GitHubAPI } from '../github/api';
 import { ProjectSnapshotSettings } from '../settings';
 import { ProjectNoteTemplate } from '../templates/project-note';
@@ -10,7 +10,7 @@ export class CreateSnapshotCommand {
         private githubAPI: GitHubAPI
     ) { }
 
-    async execute() {
+    execute() {
         // Get GitHub URL from user
         const modal = new GitHubUrlModal(this.app, async (url: string) => {
             await this.createSnapshotFromUrl(url);
@@ -56,7 +56,7 @@ export class CreateSnapshotCommand {
             const existingFile = this.app.vault.getAbstractFileByPath(filePath);
 
             if (existingFile) {
-                await this.app.vault.modify(existingFile as any, content);
+                await this.app.vault.modify(existingFile as TFile, content);
                 new Notice(`Updated: ${fileName}`);
             } else {
                 await this.app.vault.create(filePath, content);
@@ -75,8 +75,7 @@ export class CreateSnapshotCommand {
                 // Actually, let's remove the auto-open from here and move it to execute() or make it optional?
                 // Let's keep it simple: createSnapshot generates the file.
             }
-        } catch (error) {
-            console.error('Error creating note:', error);
+        } catch {
             new Notice('Error creating note');
         }
     }

@@ -5,7 +5,7 @@ import { ProjectSnapshotSettings } from '../settings';
 export class ProjectNoteTemplate {
     static generate(data: RepoData, settings: ProjectSnapshotSettings): string {
         const sections: string[] = [];
-        const timeAgo = formatDistanceToNow(new Date(data.lastCommit.date), { addSuffix: true });
+        const timeAgo = data.lastCommit.date ? formatDistanceToNow(new Date(data.lastCommit.date), { addSuffix: true }) : 'Unknown';
         const activityStatus = this.getActivityStatus(data.lastCommit.date);
         const healthScore = this.calculateHealthScore(data);
 
@@ -100,7 +100,7 @@ export class ProjectNoteTemplate {
         sections.push(`| Property | Value |`);
         sections.push(`| :--- | :--- |`);
         sections.push(`| **Full Name** | [${data.fullName}](${data.url}) |`);
-        sections.push(`| **Created** | ${new Date(data.createdAt).toLocaleDateString()} |`);
+        sections.push(`| **Created** | ${data.createdAt ? new Date(data.createdAt).toLocaleDateString() : 'N/A'} |`);
         sections.push(`| **Language** | ${data.language || 'Not specified'} |`);
         if (data.homepage) {
             sections.push(`| **Website** | [${data.homepage}](${data.homepage}) |`);
@@ -138,7 +138,8 @@ export class ProjectNoteTemplate {
         return `  <a href="${url}" style="display: block; background: var(--background-modifier-border); padding: 10px 16px; border-radius: 8px; text-decoration: none; color: var(--text-normal); text-align: center; transition: all 0.2s;">${label}</a>`;
     }
 
-    private static getActivityStatus(lastCommitDate: string): { label: string; color: string; icon: string } {
+    private static getActivityStatus(lastCommitDate: string | null): { label: string; color: string; icon: string } {
+        if (!lastCommitDate) return { label: 'Unknown', color: '#6b7280', icon: '⚪' };
         const daysSince = Math.floor((Date.now() - new Date(lastCommitDate).getTime()) / (1000 * 60 * 60 * 24));
 
         if (daysSince <= 7) return { label: 'Very Active', color: '#22c55e', icon: '🟢' };
@@ -151,7 +152,7 @@ export class ProjectNoteTemplate {
         let score = 50; // Base score
 
         // Activity bonus (up to +25)
-        const daysSinceCommit = Math.floor((Date.now() - new Date(data.lastCommit.date).getTime()) / (1000 * 60 * 60 * 24));
+        const daysSinceCommit = data.lastCommit.date ? Math.floor((Date.now() - new Date(data.lastCommit.date).getTime()) / (1000 * 60 * 60 * 24)) : 999;
         if (daysSinceCommit <= 7) score += 25;
         else if (daysSinceCommit <= 30) score += 15;
         else if (daysSinceCommit <= 90) score += 5;

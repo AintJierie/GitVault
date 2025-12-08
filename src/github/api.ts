@@ -8,11 +8,11 @@ export interface RepoData {
     description: string;
     stars: number;
     forks: number;
-    createdAt: string;
+    createdAt: string | null;
     language: string;
     lastCommit: {
         message: string;
-        date: string;
+        date: string | null;
         author: string;
         sha: string;
     };
@@ -22,6 +22,73 @@ export interface RepoData {
     topics: string[];
     readme?: string;
 }
+
+export interface GitHubUser {
+    login: string;
+    id: number;
+    avatar_url: string;
+    html_url: string;
+    name: string | null;
+    bio: string | null;
+    public_repos: number;
+    followers: number;
+    following: number;
+    location?: string | null;
+}
+
+export interface ContributionData {
+    total: Record<string, number>;
+    contributions: Array<{
+        date: string;
+        count: number;
+        level: number;
+    }>;
+}
+
+export interface GitHubIssue {
+    id: number;
+    number: number;
+    title: string;
+    state: string;
+    body?: string | null;
+    user: { login: string; avatar_url: string } | null;
+    labels: Array<{ name: string; color: string }>;
+    comments: number;
+    created_at: string;
+    updated_at: string;
+    html_url: string;
+}
+
+export interface GitHubPullRequest {
+    id: number;
+    number: number;
+    title: string;
+    state: string;
+    body?: string | null;
+    user: { login: string; avatar_url: string } | null;
+    labels: Array<{ name: string; color: string }>;
+    created_at: string;
+    updated_at: string;
+    html_url: string;
+    head: { ref: string };
+    base: { ref: string };
+    draft?: boolean;
+}
+
+export interface GitHubCommit {
+    sha: string;
+    commit: {
+        message: string;
+        author: { name?: string; date?: string } | null;
+    };
+    author: { login: string; avatar_url: string } | null;
+    html_url: string;
+    stats?: { additions: number; deletions: number; total: number };
+    files?: Array<{ filename: string; status: string; additions: number; deletions: number; patch?: string; blob_url?: string }>;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type OctokitResponseAny = any;
 
 export class GitHubAPI {
     private octokit: Octokit;
@@ -54,7 +121,7 @@ export class GitHubAPI {
         });
     }
 
-    private updateRateLimit(response: any) {
+    private updateRateLimit(response: OctokitResponseAny) {
         if (response.headers && response.headers['x-ratelimit-remaining']) {
             const remaining = parseInt(response.headers['x-ratelimit-remaining'], 10);
             if (!isNaN(remaining)) {
@@ -68,8 +135,8 @@ export class GitHubAPI {
 
     parseGitHubUrl(url: string): { owner: string; repo: string } | null {
         const patterns = [
-            /github\.com\/([^\/]+)\/([^\/]+)/,
-            /github\.com\/([^\/]+)\/([^\/]+)\.git/
+            /github\.com\/([^/]+)\/([^/]+)/,
+            /github\.com\/([^/]+)\/([^/]+)\.git/
         ];
 
         for (const pattern of patterns) {
@@ -91,7 +158,7 @@ export class GitHubAPI {
                 per_page: 100
             });
 
-            return response.data.map((repo: any) => ({
+            return response.data.map((repo) => ({
                 owner: repo.owner.login,
                 repo: repo.name,
                 fullName: repo.full_name,
@@ -111,24 +178,22 @@ export class GitHubAPI {
                 homepage: repo.homepage || '',
                 topics: repo.topics || []
             }));
-        } catch (error: any) {
-            console.error('Error fetching user repos:', error);
+        } catch (error) {
             new Notice('Error fetching your repositories');
             return [];
         }
     }
 
-    async getAuthenticatedUser(): Promise<any> {
+    async getAuthenticatedUser(): Promise<GitHubUser | null> {
         try {
             const { data } = await this.octokit.rest.users.getAuthenticated();
             return data;
-        } catch (error) {
-            console.error('Error fetching user:', error);
+        } catch {
             return null;
         }
     }
 
-    async getContributionData(username: string): Promise<any> {
+    async getContributionData(username: string): Promise<ContributionData | null> {
         try {
             // Use requestUrl to avoid CORS issues within Obsidian
             const response = await requestUrl({
@@ -137,13 +202,12 @@ export class GitHubAPI {
 
             if (response.status !== 200) return null;
             return response.json;
-        } catch (error) {
-            console.error('Error fetching contributions:', error);
+        } catch {
             return null;
         }
     }
 
-    async getIssues(owner: string, repo: string): Promise<any[]> {
+    async getIssues(owner: string, repo: string): Promise<GitHubIssue[]> {
         try {
             const response = await this.octokit.rest.issues.listForRepo({
                 owner,
@@ -151,29 +215,23 @@ export class GitHubAPI {
                 state: 'open',
                 per_page: 50
             });
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching issues:', error);
+            return response.data as unknown as GitHubIssue[];
+        } catch {
             return [];
         }
     }
 
-    async createIssue(owner: string, repo: string, title: string, body: string): Promise<any> {
-        try {
-            const response = await this.octokit.rest.issues.create({
-                owner,
-                repo,
-                title,
-                body
-            });
-            return response.data;
-        } catch (error) {
-            console.error('Error creating issue:', error);
-            throw error;
-        }
+    async createIssue(owner: string, repo: string, title: string, body: string): Promise<GitHubIssue> {
+        const response = await this.octokit.rest.issues.create({
+            owner,
+            repo,
+            title,
+            body
+        });
+        return response.data as unknown as GitHubIssue;
     }
 
-    async getPullRequests(owner: string, repo: string): Promise<any[]> {
+    async getPullRequests(owner: string, repo: string): Promise<GitHubPullRequest[]> {
         try {
             const response = await this.octokit.rest.pulls.list({
                 owner,
@@ -181,9 +239,8 @@ export class GitHubAPI {
                 state: 'open',
                 per_page: 50
             });
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching PRs:', error);
+            return response.data as unknown as GitHubPullRequest[];
+        } catch {
             return [];
         }
     }
@@ -199,13 +256,12 @@ export class GitHubAPI {
                 }
             });
             return response.data as unknown as string;
-        } catch (error) {
-            console.error('Error fetching PR diff:', error);
+        } catch {
             return null;
         }
     }
 
-    async getPullRequestCommits(owner: string, repo: string, pull_number: number): Promise<any[]> {
+    async getPullRequestCommits(owner: string, repo: string, pull_number: number): Promise<GitHubCommit[]> {
         try {
             const response = await this.octokit.rest.pulls.listCommits({
                 owner,
@@ -213,23 +269,21 @@ export class GitHubAPI {
                 pull_number,
                 per_page: 100
             });
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching PR commits:', error);
+            return response.data as unknown as GitHubCommit[];
+        } catch {
             return [];
         }
     }
 
-    async getCommitDetails(owner: string, repo: string, ref: string): Promise<any | null> {
+    async getCommitDetails(owner: string, repo: string, ref: string): Promise<GitHubCommit | null> {
         try {
             const response = await this.octokit.rest.repos.getCommit({
                 owner,
                 repo,
                 ref
             });
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching commit details:', error);
+            return response.data as unknown as GitHubCommit;
+        } catch {
             return null;
         }
     }
@@ -245,8 +299,7 @@ export class GitHubAPI {
                 }
             });
             return response.data as unknown as string;
-        } catch (error) {
-            console.error('Error fetching commit diff:', error);
+        } catch {
             return null;
         }
     }
@@ -258,14 +311,13 @@ export class GitHubAPI {
                 repo,
                 per_page: 100
             });
-            return response.data.map((branch: any) => branch.name);
-        } catch (error) {
-            console.error('Error fetching branches:', error);
+            return response.data.map((branch) => branch.name);
+        } catch {
             return [];
         }
     }
 
-    async getCommits(owner: string, repo: string, sha?: string): Promise<any[]> {
+    async getCommits(owner: string, repo: string, sha?: string): Promise<GitHubCommit[]> {
         try {
             const response = await this.octokit.rest.repos.listCommits({
                 owner,
@@ -273,9 +325,8 @@ export class GitHubAPI {
                 sha,
                 per_page: 50
             });
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching commits:', error);
+            return response.data as unknown as GitHubCommit[];
+        } catch {
             return [];
         }
     }
@@ -336,15 +387,14 @@ export class GitHubAPI {
                 topics: repoResponse.data.topics || [],
                 readme: readmeContent
             };
-        } catch (error: any) {
-            console.error('Error fetching repo data:', error);
-
-            if (error.status === 404) {
+        } catch (error: unknown) {
+            const err = error as { status?: number; message?: string };
+            if (err.status === 404) {
                 new Notice('Repository not found. Check the URL.');
-            } else if (error.status === 403) {
+            } else if (err.status === 403) {
                 new Notice('Rate limit exceeded. Add a GitHub token in settings.');
             } else {
-                new Notice(`Error: ${error.message}`);
+                new Notice(`Error: ${err.message || 'Unknown error'}`);
             }
 
             return null;

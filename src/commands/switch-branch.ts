@@ -1,4 +1,4 @@
-import { App, Modal, Notice, FuzzySuggestModal, TFile } from 'obsidian';
+import { App, Notice, FuzzySuggestModal, TFile } from 'obsidian';
 import { ProjectSnapshotSettings } from '../settings';
 import { GitHubAPI } from '../github/api';
 import { RefreshDataCommand } from './refresh-data';
@@ -55,8 +55,7 @@ export class SwitchBranchCommand {
             // Trigger refresh directly with the known branch to avoid stale cache issues
             // We pass the branch explicitly because the file cache might not have updated yet
             await new RefreshDataCommand(this.app, this.settings, this.githubAPI).refreshSnapshot(file, repoUrl, branch, false);
-        } catch (error) {
-            console.error('Error updating branch:', error);
+        } catch {
             new Notice('Failed to update branch.');
         }
     }

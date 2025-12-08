@@ -1,7 +1,6 @@
 import { App, Notice, TFile } from 'obsidian';
 import { ProjectSnapshotSettings } from '../settings';
 import { GitHubAPI } from '../github/api';
-import { CreateDashboardCommand } from './create-dashboard';
 import { ProjectNoteTemplate } from '../templates/project-note';
 
 export class RefreshDataCommand {
@@ -103,9 +102,7 @@ export class RefreshDataCommand {
 
             await this.app.vault.modify(file, finalContent);
             if (!silent) new Notice(`Updated snapshot: ${data.fullName}`);
-            else console.log(`Auto-refreshed ${data.repo}`);
         } catch (error) {
-            console.error(error);
             if (!silent) new Notice('Failed to update file');
         }
     }

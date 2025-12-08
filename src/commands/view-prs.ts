@@ -1,6 +1,6 @@
 import { App, Modal, Notice, setIcon } from 'obsidian';
 import { ProjectSnapshotSettings } from '../settings';
-import { GitHubAPI } from '../github/api';
+import { GitHubAPI, GitHubPullRequest, GitHubCommit } from '../github/api';
 
 export class ViewPRsCommand {
     constructor(
@@ -47,7 +47,7 @@ export class ViewPRsCommand {
 export class PRListModal extends Modal {
     constructor(
         app: App,
-        private prs: any[],
+        private prs: GitHubPullRequest[],
         private repoInfo: { owner: string; repo: string },
         private githubAPI: GitHubAPI
     ) {
@@ -56,100 +56,68 @@ export class PRListModal extends Modal {
 
     onOpen() {
         const { contentEl, modalEl } = this;
-        modalEl.style.cssText = 'width: 90vw; max-width: 1000px;';
+        modalEl.addClass('ps-modal-wide');
         contentEl.empty();
-        contentEl.style.padding = '0';
+        contentEl.addClass('ps-content-no-padding');
 
         // Header
-        const header = contentEl.createDiv();
-        header.style.cssText = 'background: var(--background-secondary); padding: 20px; border-bottom: 1px solid var(--background-modifier-border);';
+        const header = contentEl.createDiv({ cls: 'ps-modal-header' });
+        const headerContent = header.createDiv({ cls: 'ps-header-content' });
 
-        const headerContent = header.createDiv();
-        headerContent.style.cssText = 'display: flex; align-items: center; gap: 12px;';
-
-        const iconEl = headerContent.createSpan();
+        const iconEl = headerContent.createSpan({ cls: 'ps-icon-accent ps-icon-large' });
         setIcon(iconEl, 'git-pull-request');
-        iconEl.style.cssText = 'color: var(--interactive-accent); font-size: 1.5em;';
 
-        const titleEl = headerContent.createEl('h2', { text: `Pull Requests` });
-        titleEl.style.cssText = 'margin: 0; font-size: 1.3em;';
+        headerContent.createEl('h2', { text: 'Pull requests', cls: 'ps-modal-title' });
 
-        const repoName = header.createDiv({ text: `${this.repoInfo.owner}/${this.repoInfo.repo}` });
-        repoName.style.cssText = 'color: var(--text-muted); font-size: 0.9em; margin-top: 4px;';
+        header.createDiv({ text: `${this.repoInfo.owner}/${this.repoInfo.repo}`, cls: 'ps-modal-subtitle' });
 
         // Stats bar
-        const statsBar = contentEl.createDiv();
-        statsBar.style.cssText = 'display: flex; gap: 16px; padding: 12px 20px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);';
-
-        const openCount = statsBar.createSpan({ text: `🟢 ${this.prs.length} Open` });
-        openCount.style.cssText = 'font-size: 0.9em; font-weight: 500;';
+        const statsBar = contentEl.createDiv({ cls: 'ps-stats-bar' });
+        statsBar.createSpan({ text: `🟢 ${this.prs.length} open` });
 
         // List container
-        const listContainer = contentEl.createDiv();
-        listContainer.style.cssText = 'max-height: 60vh; overflow-y: auto; padding: 0;';
+        const listContainer = contentEl.createDiv({ cls: 'ps-list-container' });
 
         if (this.prs.length === 0) {
-            const emptyState = listContainer.createDiv();
-            emptyState.style.cssText = 'text-align: center; padding: 40px 20px; color: var(--text-muted);';
-            emptyState.createEl('div', { text: '🎉' }).style.fontSize = '3em';
-            emptyState.createEl('p', { text: 'No open pull requests!' }).style.marginTop = '12px';
+            const emptyState = listContainer.createDiv({ cls: 'ps-empty-state' });
+            emptyState.createEl('div', { text: '🎉', cls: 'ps-empty-state-icon' });
+            emptyState.createEl('p', { text: 'No open pull requests!', cls: 'ps-empty-state-text' });
         } else {
-            this.prs.forEach((pr, index) => {
-                const item = listContainer.createDiv();
-                item.style.cssText = `
-                    display: flex; 
-                    align-items: flex-start; 
-                    gap: 12px; 
-                    padding: 16px 20px; 
-                    cursor: pointer;
-                    border-bottom: 1px solid var(--background-modifier-border);
-                    transition: background 0.15s;
-                `;
-
-                item.addEventListener('mouseenter', () => item.style.background = 'var(--background-secondary)');
-                item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+            this.prs.forEach((pr) => {
+                const item = listContainer.createDiv({ cls: 'ps-item-card' });
 
                 // PR icon
-                const prIcon = item.createDiv();
-                prIcon.style.cssText = 'color: #22c55e; margin-top: 2px;';
+                const prIcon = item.createDiv({ cls: 'ps-pr-icon' });
                 setIcon(prIcon, 'git-pull-request');
 
                 // Content
-                const content = item.createDiv();
-                content.style.flex = '1';
+                const content = item.createDiv({ cls: 'ps-item-content' });
+                content.createDiv({ text: pr.title, cls: 'ps-pr-title' });
 
-                const title = content.createDiv({ text: pr.title });
-                title.style.cssText = 'font-weight: 600; margin-bottom: 6px; color: var(--text-normal);';
-
-                const meta = content.createDiv();
-                meta.style.cssText = 'display: flex; gap: 12px; font-size: 0.85em; color: var(--text-muted); flex-wrap: wrap; align-items: center;';
-
-                meta.createSpan({ text: `#${pr.number}` }).style.fontFamily = 'var(--font-monospace)';
-                meta.createSpan({ text: `opened by ${pr.user.login}` });
+                const meta = content.createDiv({ cls: 'ps-pr-meta' });
+                meta.createSpan({ text: `#${pr.number}`, cls: 'ps-mono' });
+                meta.createSpan({ text: `opened by ${pr.user?.login || 'unknown'}` });
 
                 if (pr.draft) {
-                    const draftBadge = meta.createSpan({ text: 'Draft' });
-                    draftBadge.style.cssText = 'background: var(--background-modifier-border); padding: 2px 8px; border-radius: 10px; font-size: 0.85em;';
+                    meta.createSpan({ text: 'Draft', cls: 'ps-draft-badge' });
                 }
 
                 // Labels
                 if (pr.labels && pr.labels.length > 0) {
-                    pr.labels.slice(0, 3).forEach((label: any) => {
-                        const lbl = meta.createSpan({ text: label.name });
-                        lbl.style.cssText = `
-                            background: #${label.color}; 
-                            color: ${this.getContrastColor(label.color)}; 
-                            padding: 2px 8px; 
-                            border-radius: 10px; 
-                            font-size: 0.8em;
-                        `;
+                    pr.labels.slice(0, 3).forEach((label) => {
+                        const lbl = meta.createSpan({ text: label.name, cls: 'ps-label' });
+                        lbl.setCssStyles({
+                            background: `#${label.color}`,
+                            color: this.getContrastColor(label.color)
+                        });
                     });
                 }
 
                 // Avatar
-                const avatar = item.createEl('img');
-                avatar.src = pr.user.avatar_url;
-                avatar.style.cssText = 'width: 32px; height: 32px; border-radius: 50%;';
+                const avatar = item.createEl('img', { cls: 'ps-item-avatar' });
+                if (pr.user?.avatar_url) {
+                    avatar.src = pr.user.avatar_url;
+                }
 
                 item.addEventListener('click', async () => {
                     new Notice('Loading commits...');
@@ -165,9 +133,9 @@ export class PRListModal extends Modal {
     }
 
     getContrastColor(hexColor: string): string {
-        const r = parseInt(hexColor.substr(0, 2), 16);
-        const g = parseInt(hexColor.substr(2, 2), 16);
-        const b = parseInt(hexColor.substr(4, 2), 16);
+        const r = parseInt(hexColor.substring(0, 2), 16);
+        const g = parseInt(hexColor.substring(2, 4), 16);
+        const b = parseInt(hexColor.substring(4, 6), 16);
         const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
         return yiq >= 128 ? '#000' : '#fff';
     }
@@ -180,8 +148,8 @@ export class PRListModal extends Modal {
 export class PRCommitsModal extends Modal {
     constructor(
         app: App,
-        private pr: any,
-        private commits: any[],
+        private pr: GitHubPullRequest,
+        private commits: GitHubCommit[],
         private repoInfo: { owner: string; repo: string },
         private githubAPI: GitHubAPI
     ) {
@@ -190,32 +158,25 @@ export class PRCommitsModal extends Modal {
 
     onOpen() {
         const { contentEl, modalEl } = this;
-        modalEl.style.cssText = 'width: 90vw; max-width: 1000px;';
+        modalEl.addClass('ps-modal-wide');
         contentEl.empty();
-        contentEl.style.padding = '0';
+        contentEl.addClass('ps-content-no-padding');
 
         // Header
-        const header = contentEl.createDiv();
-        header.style.cssText = 'background: var(--background-secondary); padding: 20px; border-bottom: 1px solid var(--background-modifier-border);';
+        const header = contentEl.createDiv({ cls: 'ps-modal-header' });
+        const titleRow = header.createDiv({ cls: 'ps-modal-title-row' });
 
-        const titleRow = header.createDiv();
-        titleRow.style.cssText = 'display: flex; align-items: center; gap: 12px;';
-
-        const icon = titleRow.createSpan();
+        const icon = titleRow.createSpan({ cls: 'ps-icon-accent' });
         setIcon(icon, 'git-commit');
-        icon.style.cssText = 'color: var(--interactive-accent); font-size: 1.3em;';
 
-        const title = titleRow.createEl('h2', { text: `Commits in #${this.pr.number}` });
-        title.style.cssText = 'margin: 0; font-size: 1.2em;';
+        titleRow.createEl('h2', { text: `Commits in #${this.pr.number}`, cls: 'ps-modal-title' });
 
-        const subTitle = header.createDiv({ text: this.pr.title });
-        subTitle.style.cssText = 'color: var(--text-muted); font-size: 0.9em; margin-top: 4px;';
+        header.createDiv({ text: this.pr.title, cls: 'ps-modal-subtitle' });
 
         // Actions
-        const actionBar = contentEl.createDiv();
-        actionBar.style.cssText = 'display: flex; gap: 10px; padding: 12px 20px; background: var(--background-primary); border-bottom: 1px solid var(--background-modifier-border);';
+        const actionBar = contentEl.createDiv({ cls: 'ps-action-bar' });
 
-        const viewAllChangesBtn = actionBar.createEl('button', { text: 'View All Changes (Full Diff)' });
+        const viewAllChangesBtn = actionBar.createEl('button', { text: 'View all changes (full diff)' });
         viewAllChangesBtn.onclick = async () => {
             new Notice('Loading full diff...');
             const diff = await this.githubAPI.getPullRequestDiff(this.repoInfo.owner, this.repoInfo.repo, this.pr.number);
@@ -227,33 +188,19 @@ export class PRCommitsModal extends Modal {
         };
 
         // List container
-        const listContainer = contentEl.createDiv();
-        listContainer.style.cssText = 'max-height: 60vh; overflow-y: auto; padding: 0;';
+        const listContainer = contentEl.createDiv({ cls: 'ps-list-container' });
 
         this.commits.forEach((commit) => {
-            const item = listContainer.createDiv();
-            item.style.cssText = `
-                display: flex; 
-                flex-direction: column;
-                gap: 4px; 
-                padding: 12px 20px; 
-                cursor: pointer;
-                border-bottom: 1px solid var(--background-modifier-border);
-                transition: background 0.1s;
-            `;
+            const item = listContainer.createDiv({ cls: 'ps-commit-item' });
 
-            item.addEventListener('mouseenter', () => item.style.background = 'var(--background-secondary)');
-            item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+            item.createDiv({ text: commit.commit.message.split('\n')[0], cls: 'ps-commit-message' });
 
-            const msg = item.createDiv({ text: commit.commit.message.split('\n')[0] });
-            msg.style.fontWeight = '500';
-
-            const meta = item.createDiv();
-            meta.style.cssText = 'display: flex; gap: 10px; font-size: 0.8em; color: var(--text-muted);';
-            const author = commit.author ? commit.author.login : commit.commit.author.name;
+            const meta = item.createDiv({ cls: 'ps-commit-meta' });
+            const author = commit.author ? commit.author.login : (commit.commit.author?.name || 'Unknown');
+            const commitDate = commit.commit.author?.date ? new Date(commit.commit.author.date).toLocaleDateString() : 'Unknown';
             meta.createSpan({ text: `👤 ${author}` });
-            meta.createSpan({ text: `🕒 ${new Date(commit.commit.author.date).toLocaleDateString()}` });
-            meta.createSpan({ text: `🔗 ${commit.sha.substring(0, 7)}` }).style.fontFamily = 'var(--font-monospace)';
+            meta.createSpan({ text: `🕒 ${commitDate}` });
+            meta.createSpan({ text: `🔗 ${commit.sha.substring(0, 7)}`, cls: 'ps-mono' });
 
             item.addEventListener('click', async () => {
                 new Notice(`Loading details for ${commit.sha.substring(0, 7)}...`);
@@ -275,7 +222,7 @@ export class PRCommitsModal extends Modal {
 export class CommitFilesModal extends Modal {
     constructor(
         app: App,
-        private commit: any,
+        private commit: GitHubCommit,
         private repoInfo: { owner: string; repo: string },
         private githubAPI: GitHubAPI
     ) {
@@ -284,82 +231,57 @@ export class CommitFilesModal extends Modal {
 
     onOpen() {
         const { contentEl, modalEl } = this;
-        modalEl.style.cssText = 'width: 90vw; max-width: 1100px; height: 85vh;';
+        modalEl.addClass('ps-modal-wide');
         contentEl.empty();
-        contentEl.style.padding = '0';
+        contentEl.addClass('ps-content-no-padding');
 
         // Header
-        const header = contentEl.createDiv();
-        header.style.cssText = 'background: var(--background-secondary); padding: 20px; border-bottom: 1px solid var(--background-modifier-border);';
+        const header = contentEl.createDiv({ cls: 'ps-modal-header' });
+        const titleRow = header.createDiv({ cls: 'ps-modal-title-row' });
 
-        const titleRow = header.createDiv();
-        titleRow.style.cssText = 'display: flex; align-items: center; gap: 12px;';
-
-        const icon = titleRow.createSpan();
+        const icon = titleRow.createSpan({ cls: 'ps-icon-accent' });
         setIcon(icon, 'file-diff');
-        icon.style.cssText = 'color: var(--interactive-accent); font-size: 1.3em;';
 
-        const title = titleRow.createEl('h2', { text: `Changes in ${this.commit.sha.substring(0, 7)}` });
-        title.style.cssText = 'margin: 0; font-size: 1.2em;';
+        titleRow.createEl('h2', { text: `Changes in ${this.commit.sha.substring(0, 7)}`, cls: 'ps-modal-title' });
 
-        const subTitle = header.createDiv({ text: this.commit.commit.message.split('\n')[0] });
-        subTitle.style.cssText = 'color: var(--text-muted); font-size: 0.9em; margin-top: 4px;';
+        header.createDiv({ text: this.commit.commit.message.split('\n')[0], cls: 'ps-modal-subtitle' });
 
-        const stats = header.createDiv();
-        stats.style.cssText = 'display: flex; gap: 12px; margin-top: 8px; font-size: 0.85em; color: var(--text-muted);';
-
+        const stats = header.createDiv({ cls: 'ps-stats-row' });
         const statsData = this.commit.stats || { additions: 0, deletions: 0, total: 0 };
-        stats.createSpan({ text: `📝 ${this.commit.files.length} files` });
-        stats.createSpan({ text: `➕ ${statsData.additions}` }).style.color = '#22c55e';
-        stats.createSpan({ text: `➖ ${statsData.deletions}` }).style.color = '#ef4444';
+        const filesCount = this.commit.files?.length || 0;
+        stats.createSpan({ text: `📝 ${filesCount} files` });
+        stats.createSpan({ text: `➕ ${statsData.additions}`, cls: 'ps-stat-green' });
+        stats.createSpan({ text: `➖ ${statsData.deletions}`, cls: 'ps-stat-red' });
 
         // File List
-        const listContainer = contentEl.createDiv();
-        listContainer.style.cssText = 'max-height: 60vh; overflow-y: auto; padding: 0;';
+        const listContainer = contentEl.createDiv({ cls: 'ps-list-container' });
 
-        this.commit.files.forEach((file: any) => {
-            const item = listContainer.createDiv();
-            item.style.cssText = `
-                display: flex; 
-                align-items: center;
-                gap: 12px; 
-                padding: 12px 20px; 
-                cursor: pointer;
-                border-bottom: 1px solid var(--background-modifier-border);
-                transition: background 0.1s;
-            `;
-
-            item.addEventListener('mouseenter', () => item.style.background = 'var(--background-secondary)');
-            item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+        this.commit.files?.forEach((file) => {
+            const item = listContainer.createDiv({ cls: 'ps-file-item' });
 
             // Status Icon
-            const statusIcon = item.createSpan();
-            statusIcon.style.cssText = 'font-family: var(--font-monospace); font-weight: bold; width: 24px; text-align: center;';
+            const statusIcon = item.createSpan({ cls: 'ps-file-status' });
 
             if (file.status === 'added') {
                 statusIcon.innerText = 'A';
-                statusIcon.style.color = '#22c55e';
+                statusIcon.addClass('ps-icon-green');
             } else if (file.status === 'removed') {
                 statusIcon.innerText = 'D';
-                statusIcon.style.color = '#ef4444';
+                statusIcon.addClass('ps-icon-red');
             } else if (file.status === 'modified') {
                 statusIcon.innerText = 'M';
-                statusIcon.style.color = '#f59e0b';
+                statusIcon.addClass('ps-icon-yellow');
             } else if (file.status === 'renamed') {
                 statusIcon.innerText = 'R';
-                statusIcon.style.color = '#3b82f6';
+                statusIcon.addClass('ps-icon-blue');
             } else {
                 statusIcon.innerText = '?';
-                statusIcon.style.color = 'var(--text-muted)';
+                statusIcon.addClass('ps-icon-muted');
             }
 
-            const filename = item.createDiv({ text: file.filename });
-            filename.style.flex = '1';
-            filename.style.fontWeight = '500';
+            item.createDiv({ text: file.filename, cls: 'ps-file-name' });
 
-            const changes = item.createDiv();
-            changes.style.fontSize = '0.8em';
-            changes.style.color = 'var(--text-muted)';
+            const changes = item.createDiv({ cls: 'ps-file-changes' });
             if (file.patch) {
                 changes.innerText = `+${file.additions} -${file.deletions}`;
             } else {
@@ -393,57 +315,41 @@ export class ViewDiffModal extends Modal {
 
     onOpen() {
         const { contentEl, modalEl } = this;
-        modalEl.style.cssText = 'width: 95vw; max-width: 1600px; height: 90vh;';
+        modalEl.addClass('ps-modal-extra-wide');
         contentEl.empty();
-        contentEl.style.padding = '0';
+        contentEl.addClass('ps-content-no-padding');
 
         // Header
-        const header = contentEl.createDiv();
-        header.style.cssText = 'background: var(--background-secondary); padding: 20px; border-bottom: 1px solid var(--background-modifier-border);';
+        const header = contentEl.createDiv({ cls: 'ps-modal-header' });
+        const titleRow = header.createDiv({ cls: 'ps-modal-title-row' });
 
-        const titleRow = header.createDiv();
-        titleRow.style.cssText = 'display: flex; align-items: center; gap: 12px;';
-
-        const prIcon = titleRow.createSpan();
+        const prIcon = titleRow.createSpan({ cls: 'ps-icon-accent' });
         setIcon(prIcon, 'file-diff');
-        prIcon.style.color = 'var(--text-accent)';
 
-        titleRow.createEl('h3', { text: this.title }).style.margin = '0';
+        titleRow.createEl('h3', { text: this.title, cls: 'ps-modal-title' });
 
         // Diff viewer
-        const diffContainer = contentEl.createDiv();
-        diffContainer.style.cssText = 'max-height: 60vh; overflow: auto; padding: 0;';
-
-        const pre = diffContainer.createEl('pre');
-        pre.style.cssText = `
-            margin: 0; 
-            padding: 16px; 
-            font-family: var(--font-monospace); 
-            font-size: 0.85em; 
-            line-height: 1.5;
-            white-space: pre-wrap;
-            background: var(--background-primary);
-        `;
+        const diffContainer = contentEl.createDiv({ cls: 'ps-diff-container' });
+        const pre = diffContainer.createEl('pre', { cls: 'ps-diff-pre' });
 
         // Syntax highlight diff
         const lines = this.diff.split('\n');
         lines.forEach(line => {
             const lineEl = pre.createEl('div');
             if (line.startsWith('+') && !line.startsWith('+++')) {
-                lineEl.style.cssText = 'background: rgba(34, 197, 94, 0.15); color: #22c55e;';
+                lineEl.addClass('ps-diff-line-added');
             } else if (line.startsWith('-') && !line.startsWith('---')) {
-                lineEl.style.cssText = 'background: rgba(239, 68, 68, 0.15); color: #ef4444;';
+                lineEl.addClass('ps-diff-line-removed');
             } else if (line.startsWith('@@')) {
-                lineEl.style.cssText = 'color: #8b5cf6; font-weight: 500;';
+                lineEl.addClass('ps-diff-line-hunk');
             } else if (line.startsWith('diff') || line.startsWith('index')) {
-                lineEl.style.cssText = 'color: var(--text-muted); font-weight: 600;';
+                lineEl.addClass('ps-diff-line-meta');
             }
             lineEl.textContent = line;
         });
 
         // Footer
-        const footer = contentEl.createDiv();
-        footer.style.cssText = 'display: flex; justify-content: flex-end; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--background-modifier-border);';
+        const footer = contentEl.createDiv({ cls: 'ps-modal-footer' });
 
         if (this.url) {
             const browserBtn = footer.createEl('button', { text: '🔗 View on GitHub' });

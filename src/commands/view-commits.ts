@@ -1,6 +1,6 @@
 import { App, Modal, Notice, setIcon } from 'obsidian';
 import { ProjectSnapshotSettings } from '../settings';
-import { GitHubAPI } from '../github/api';
+import { GitHubAPI, GitHubCommit } from '../github/api';
 import { CommitFilesModal } from './view-prs';
 
 export class ViewCommitsCommand {
@@ -62,7 +62,7 @@ export class ViewCommitsCommand {
 export class CommitListModal extends Modal {
     constructor(
         app: App,
-        private commits: any[],
+        private commits: GitHubCommit[],
         private repoInfo: { owner: string; repo: string },
         private githubAPI: GitHubAPI,
         private branch?: string
@@ -72,61 +72,39 @@ export class CommitListModal extends Modal {
 
     onOpen() {
         const { contentEl, modalEl } = this;
-        modalEl.style.cssText = 'width: 90vw; max-width: 1000px;'; // Force modal width
+        modalEl.addClass('ps-modal-wide');
         contentEl.empty();
-        contentEl.style.padding = '0';
+        contentEl.addClass('ps-content-no-padding');
 
         // Header
-        const header = contentEl.createDiv();
-        header.style.cssText = 'background: var(--background-secondary); padding: 20px; border-bottom: 1px solid var(--background-modifier-border);';
+        const header = contentEl.createDiv({ cls: 'ps-modal-header' });
+        const titleRow = header.createDiv({ cls: 'ps-modal-title-row' });
 
-        const titleRow = header.createDiv();
-        titleRow.style.cssText = 'display: flex; align-items: center; gap: 12px;';
-
-        const icon = titleRow.createSpan();
+        const icon = titleRow.createSpan({ cls: 'ps-icon-accent' });
         setIcon(icon, 'git-commit');
-        icon.style.cssText = 'color: var(--interactive-accent); font-size: 1.3em;';
 
         const titleText = this.branch ? `Commits on ${this.branch}` : 'Commits';
-        const title = titleRow.createEl('h2', { text: titleText });
-        title.style.cssText = 'margin: 0; font-size: 1.2em;';
+        titleRow.createEl('h2', { text: titleText, cls: 'ps-modal-title' });
 
-        const subTitle = header.createDiv({ text: `${this.repoInfo.owner}/${this.repoInfo.repo}` });
-        subTitle.style.cssText = 'color: var(--text-muted); font-size: 0.9em; margin-top: 4px;';
+        header.createDiv({ text: `${this.repoInfo.owner}/${this.repoInfo.repo}`, cls: 'ps-modal-subtitle' });
 
         // List container
-        const listContainer = contentEl.createDiv();
-        listContainer.style.cssText = 'max-height: 60vh; overflow-y: auto; padding: 0;';
+        const listContainer = contentEl.createDiv({ cls: 'ps-list-container' });
 
         this.commits.forEach((commit) => {
-            const item = listContainer.createDiv();
-            item.style.cssText = `
-                display: flex; 
-                flex-direction: column;
-                gap: 4px; 
-                padding: 12px 20px; 
-                cursor: pointer;
-                border-bottom: 1px solid var(--background-modifier-border);
-                transition: background 0.1s;
-            `;
+            const item = listContainer.createDiv({ cls: 'ps-commit-item' });
 
-            item.addEventListener('mouseenter', () => item.style.background = 'var(--background-secondary)');
-            item.addEventListener('mouseleave', () => item.style.background = 'transparent');
+            item.createDiv({ text: commit.commit.message.split('\n')[0], cls: 'ps-commit-message' });
 
-            const msg = item.createDiv({ text: commit.commit.message.split('\n')[0] });
-            msg.style.fontWeight = '500';
-
-            const meta = item.createDiv();
-            meta.style.cssText = 'display: flex; gap: 10px; font-size: 0.8em; color: var(--text-muted);';
-            const author = commit.author ? commit.author.login : commit.commit.author.name;
+            const meta = item.createDiv({ cls: 'ps-commit-meta' });
+            const author = commit.author ? commit.author.login : (commit.commit.author?.name || 'Unknown');
+            const commitDate = commit.commit.author?.date ? new Date(commit.commit.author.date).toLocaleDateString() : 'Unknown';
             meta.createSpan({ text: `👤 ${author}` });
-            meta.createSpan({ text: `🕒 ${new Date(commit.commit.author.date).toLocaleDateString()}` });
-            meta.createSpan({ text: `🔗 ${commit.sha.substring(0, 7)}` }).style.fontFamily = 'var(--font-monospace)';
+            meta.createSpan({ text: `🕒 ${commitDate}` });
+            meta.createSpan({ text: `🔗 ${commit.sha.substring(0, 7)}`, cls: 'ps-mono' });
 
             item.addEventListener('click', async () => {
                 new Notice(`Loading details for ${commit.sha.substring(0, 7)}...`);
-                // Passing undefined or null as ref usually defaults to main in APIs, 
-                // but getCommitDetails needs a specific SHA. SHA is always unique regardless of branch.
                 const details = await this.githubAPI.getCommitDetails(this.repoInfo.owner, this.repoInfo.repo, commit.sha);
                 if (details) {
                     new CommitFilesModal(this.app, details, this.repoInfo, this.githubAPI).open();

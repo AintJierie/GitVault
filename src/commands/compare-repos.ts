@@ -1,4 +1,4 @@
-import { App, Modal, Setting, Notice, setIcon, normalizePath } from 'obsidian';
+import { App, Modal, Notice, setIcon, normalizePath, TFile } from 'obsidian';
 import { ProjectSnapshotSettings } from '../settings';
 import { GitHubAPI, RepoData } from '../github/api';
 import { formatDistanceToNow } from 'date-fns';
@@ -10,7 +10,7 @@ export class CompareReposCommand {
         private githubAPI: GitHubAPI
     ) { }
 
-    async execute() {
+    execute() {
         new CompareModal(this.app, this.settings, this.githubAPI, async (repos) => {
             await this.generateComparison(repos);
         }).open();
@@ -26,7 +26,7 @@ export class CompareReposCommand {
 
         // Sanitize filename
         const names = repos.map(r => r.repo).join(' vs ');
-        const safeNames = names.replace(/[\/\\:*?"<>|]/g, '-'); // Windows invalid chars
+        const safeNames = names.replace(/[/\\:*?"<>|]/g, '-'); // Windows invalid chars
         const fileName = `Compare ${safeNames}.md`;
 
         const folder = this.settings.defaultFolder;
@@ -43,7 +43,7 @@ export class CompareReposCommand {
 
             const existing = this.app.vault.getAbstractFileByPath(filePath);
             if (existing) {
-                await this.app.vault.modify(existing as any, content);
+                await this.app.vault.modify(existing as TFile, content);
                 new Notice(`Updated: ${fileName}`);
             } else {
                 await this.app.vault.create(filePath, content);
@@ -52,11 +52,10 @@ export class CompareReposCommand {
 
             const file = this.app.vault.getAbstractFileByPath(filePath);
             if (file) {
-                await this.app.workspace.getLeaf().openFile(file as any);
+                await this.app.workspace.getLeaf().openFile(file as TFile);
             }
-        } catch (e: any) {
-            console.error(e);
-            new Notice(`Error creating comparison note: ${e.message}`);
+        } catch {
+            new Notice('Error creating comparison note');
         }
     }
 
@@ -156,8 +155,8 @@ ${repos.map(r => {
 | 🍴 Forks | ${repos.map(r => r.forks.toLocaleString()).join(' | ')} |
 | 🐛 Issues | ${repos.map(r => r.openIssues).join(' | ')} |
 | 💻 Language | ${repos.map(r => r.language || 'N/A').join(' | ')} |
-| 📅 Last Commit | ${repos.map(r => r.lastCommit.date.split('T')[0]).join(' | ')} |
-| 🎂 Created | ${repos.map(r => formatDistanceToNow(new Date(r.createdAt), { addSuffix: true })).join(' | ')} |
+| 📅 Last Commit | ${repos.map(r => r.lastCommit.date?.split('T')[0] || 'N/A').join(' | ')} |
+| 🎂 Created | ${repos.map(r => r.createdAt ? formatDistanceToNow(new Date(r.createdAt), { addSuffix: true }) : 'N/A').join(' | ')} |
 
 ## 🏆 Winner Analysis
 
@@ -176,7 +175,7 @@ ${this.calculateWinner(repos)}
         const metrics = [
             { name: 'Most Popular', emoji: '⭐', winner: [...repos].sort((a, b) => b.stars - a.stars)[0], field: 'stars' },
             { name: 'Most Forked', emoji: '🍴', winner: [...repos].sort((a, b) => b.forks - a.forks)[0], field: 'forks' },
-            { name: 'Most Active', emoji: '🔥', winner: [...repos].sort((a, b) => new Date(b.lastCommit.date).getTime() - new Date(a.lastCommit.date).getTime())[0], field: 'lastCommit' },
+            { name: 'Most Active', emoji: '🔥', winner: [...repos].sort((a, b) => new Date(b.lastCommit.date || 0).getTime() - new Date(a.lastCommit.date || 0).getTime())[0], field: 'lastCommit' },
             { name: 'Best Maintained', emoji: '✨', winner: [...repos].sort((a, b) => a.openIssues - b.openIssues)[0], field: 'openIssues' }
         ];
 
@@ -206,25 +205,20 @@ class CompareModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.createEl('h2', { text: 'Compare Repositories' });
-        contentEl.style.width = '600px';
-        contentEl.style.maxWidth = '90vw';
+        contentEl.addClass('ps-modal-small');
+        contentEl.createEl('h2', { text: 'Compare repositories' });
 
         // Input Area
-        const inputDiv = contentEl.createDiv();
-        inputDiv.style.display = 'flex';
-        inputDiv.style.gap = '10px';
-        inputDiv.style.marginBottom = '20px';
+        const inputDiv = contentEl.createDiv({ cls: 'ps-compare-input-row' });
 
         let inputUrl = '';
-        const input = inputDiv.createEl('input', { type: 'text', placeholder: 'https://github.com/owner/repo' });
-        input.style.flex = '1';
+        const input = inputDiv.createEl('input', { type: 'text', placeholder: 'https://github.com/owner/repo', cls: 'ps-compare-input ps-form-input' });
         input.addEventListener('input', (e) => inputUrl = (e.target as HTMLInputElement).value);
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') addBtn.click();
         });
 
-        const addBtn = inputDiv.createEl('button', { text: 'Add Repo', cls: 'mod-cta' });
+        const addBtn = inputDiv.createEl('button', { text: 'Add repo', cls: 'mod-cta' });
         addBtn.onclick = async () => {
             if (!inputUrl) return;
             addBtn.setAttr('disabled', 'true');
@@ -233,24 +227,16 @@ class CompareModal extends Modal {
             input.value = '';
             inputUrl = '';
             addBtn.removeAttribute('disabled');
-            addBtn.innerText = 'Add Repo';
+            addBtn.innerText = 'Add repo';
         };
 
         // Repos Container
-        this.repoContainer = contentEl.createDiv();
-        this.repoContainer.style.display = 'grid';
-        this.repoContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(250px, 1fr))';
-        this.repoContainer.style.gap = '15px';
-        this.repoContainer.style.marginBottom = '30px';
+        this.repoContainer = contentEl.createDiv({ cls: 'ps-repo-grid' });
 
         // Footer / Action
-        const footer = contentEl.createDiv();
-        footer.style.display = 'flex';
-        footer.style.justifyContent = 'flex-end';
-        footer.style.borderTop = '1px solid var(--background-modifier-border)';
-        footer.style.paddingTop = '15px';
+        const footer = contentEl.createDiv({ cls: 'ps-compare-footer' });
 
-        const compareBtn = footer.createEl('button', { text: 'Compare All', cls: 'mod-cta' });
+        const compareBtn = footer.createEl('button', { text: 'Compare all', cls: 'mod-cta' });
         compareBtn.onclick = () => {
             if (this.addedRepos.length < 2) {
                 new Notice('Please add at least 2 repositories');
@@ -285,67 +271,39 @@ class CompareModal extends Modal {
     renderRepos() {
         this.repoContainer.empty();
         this.addedRepos.forEach(repo => {
-            const card = this.repoContainer.createDiv({ cls: 'repo-card' });
-            card.style.backgroundColor = 'var(--background-secondary)';
-            card.style.borderRadius = '8px';
-            card.style.padding = '15px';
-            card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-            card.style.position = 'relative';
+            const card = this.repoContainer.createDiv({ cls: 'ps-compare-card' });
 
             // Title
-            const title = card.createEl('div', { text: repo.fullName });
-            title.style.fontWeight = 'bold';
-            title.style.marginBottom = '12px';
-            title.style.borderBottom = '1px solid var(--background-modifier-border)';
-            title.style.paddingBottom = '8px';
+            card.createEl('div', { text: repo.fullName, cls: 'ps-compare-card-title' });
 
             // Stats
             this.createStatRow(card, 'star', 'Stars', repo.stars);
             this.createStatRow(card, 'git-fork', 'Forks', repo.forks);
             this.createStatRow(card, 'alert-circle', 'Open issues', repo.openIssues);
-            this.createStatRow(card, 'calendar', 'Age', formatDistanceToNow(new Date(repo.createdAt), { addSuffix: true }));
-            this.createStatRow(card, 'plus-square', 'Last commit', formatDistanceToNow(new Date(repo.lastCommit.date), { addSuffix: true }));
+            this.createStatRow(card, 'calendar', 'Age', repo.createdAt ? formatDistanceToNow(new Date(repo.createdAt), { addSuffix: true }) : 'N/A');
+            this.createStatRow(card, 'plus-square', 'Last commit', repo.lastCommit.date ? formatDistanceToNow(new Date(repo.lastCommit.date), { addSuffix: true }) : 'N/A');
             if (repo.language) this.createStatRow(card, 'code', 'Language', repo.language);
 
             // Remove Button
-            const removeBtn = card.createDiv({ text: 'Remove repo' });
-            removeBtn.style.color = 'var(--text-error)';
-            removeBtn.style.marginTop = '15px';
-            removeBtn.style.textAlign = 'center';
-            removeBtn.style.cursor = 'pointer';
-            removeBtn.style.fontSize = '0.9em';
+            const removeBtn = card.createDiv({ text: 'Remove repo', cls: 'ps-remove-btn' });
             removeBtn.addEventListener('click', () => {
                 this.addedRepos = this.addedRepos.filter(r => r !== repo);
                 this.renderRepos();
             });
-
-            // Hover effect
-            removeBtn.addEventListener('mouseenter', () => removeBtn.style.textDecoration = 'underline');
-            removeBtn.addEventListener('mouseleave', () => removeBtn.style.textDecoration = 'none');
         });
     }
 
-    createStatRow(container: HTMLElement, iconName: string, label: string, value: any) {
-        const row = container.createDiv();
-        row.style.display = 'flex';
-        row.style.justifyContent = 'space-between';
-        row.style.fontSize = '0.9em';
-        row.style.marginBottom = '6px';
-        row.style.color = 'var(--text-normal)';
+    createStatRow(container: HTMLElement, iconName: string, label: string, value: string | number) {
+        const row = container.createDiv({ cls: 'ps-compare-stat-row' });
 
-        const left = row.createDiv();
-        left.style.display = 'flex';
-        left.style.alignItems = 'center';
-        left.style.gap = '8px';
+        const left = row.createDiv({ cls: 'ps-compare-stat-left' });
 
-        const icon = left.createSpan();
+        const icon = left.createSpan({ cls: 'ps-compare-stat-icon' });
         setIcon(icon, iconName);
-        icon.style.color = 'var(--text-muted)';
 
         left.createSpan({ text: label });
 
-        const right = row.createDiv({ text: String(value) });
-        right.style.fontWeight = 'bold';
+        row.createDiv({ text: String(value), cls: 'ps-compare-stat-value' });
     }
 
     onClose() {
