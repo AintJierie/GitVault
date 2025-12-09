@@ -1,0 +1,7 @@
+{
+  "plugins": ["obsidianmd"],
+  "rules": {
+    "obsidianmd/unresolved-provider-dependencies": "error",
+    "obsidianmd/no-circular-dependencies": "error"
+  }
+}
