@@ -24,6 +24,18 @@
 
 ---
 
+## 📥 Installation
+
+1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin if you haven't already.
+2. Open **Settings > Community Plugins** and enable BRAT.
+3. Open the Command Palette (`Ctrl/Cmd + P`) and run the **BRAT: Add a beta plugin for testing** command.
+4. Enter the repository URL: `https://github.com/AintJierie/GitVault`
+5. Click **Add Plugin**.
+6. Go to **Settings > Community Plugins** and enable **GitVault**.
+7. You're ready to go!
+
+---
+
 ## ⚙️ Setup
 
 1.  **Configure GitHub Token**:
